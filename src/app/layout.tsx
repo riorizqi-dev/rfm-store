@@ -21,9 +21,9 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AkunPremium | Aplikasi Premium Termurah & Terpercaya',
+  title: 'RFMstore | Aplikasi Premium Termurah & Terpercaya',
   description:
-    'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi penuh, transaksi via WhatsApp.',
+    'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi sesuai aplikasi, transaksi via WhatsApp.',
 };
 
 export default function RootLayout({

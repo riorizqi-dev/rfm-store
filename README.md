@@ -1,4 +1,4 @@
-# AkunPremium — Landing Page Jualan Akun Premium
+# RFMstore — Landing Page Jualan Akun Premium
 
 Landing page katalog produk digital (akun/aplikasi premium) dengan alur transaksi manual via WhatsApp. Pengunjung tidak perlu daftar, tidak ada cart, dan tidak ada payment gateway: mereka lihat produk, klik detail, lalu lanjut chat admin atau join grup WhatsApp.
 

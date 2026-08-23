@@ -3,7 +3,7 @@ import { Reveal } from './Reveal';
 const faqs = [
   {
     q: 'Akunnya legal dan aman dipakai?',
-    a: 'Semua akun adalah akun premium resmi yang dijalankan sesuai ketentuan masing-masing layanan (skema family/sharing atau seat resmi). Akun bergaransi penuh selama masa berlangganan, jadi kalau ada masalah langsung diganti.',
+    a: 'Semua akun adalah akun premium resmi yang dijalankan sesuai ketentuan masing-masing layanan (skema family/sharing atau seat resmi). Sebagian besar produk bergaransi selama masa berlangganan, dengan ketentuan yang beda tiap aplikasi.',
   },
   {
     q: 'Pembayarannya lewat apa aja?',
