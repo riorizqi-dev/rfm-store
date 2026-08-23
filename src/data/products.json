@@ -1,0 +1,147 @@
+{
+  "settings": {
+    "storeName": "AkunPremium",
+    "tagline": "Aplikasi Premium Termurah & Terpercaya",
+    "aboutTitle": "Kenapa Beli di AkunPremium?",
+    "aboutText": "AkunPremium adalah reseller akun premium terpercaya sejak 2021. Kami menjual akun resmi dari layanan streaming, desain, dan produktivitas dengan harga jauh lebih murah dari langganan langsung. Hampir semua akun bergaransi, ketentuan sesuai tiap aplikasi. Transaksi via WhatsApp, tidak ribet, tidak perlu daftar akun. Bayar, terima, langsung pakai.",
+    "waNumber": "6285810383881",
+    "waGroup": "https://chat.whatsapp.com/G8V9x2UjkwVExoh8XVxjrw",
+    "waChannel": "https://whatsapp.com/channel/0029VbCA4Mg0AgW76EbDO711",
+    "waDefaultMessage": "Halo admin, saya mau tanya soal akun premium"
+  },
+  "products": [
+    {
+      "id": "netflix-premium",
+      "name": "Netflix Premium",
+      "domain": "netflix.com",
+      "category": "Streaming",
+      "shortDescription": "Netflix Premium 4K Ultra HD, nonton tanpa iklan, 4 layar bersamaan.",
+      "longDescription": "Akun Netflix Premium resmi dengan kualitas 4K Ultra HD + HDR. Tonton ribuan film, series, anime, dan dokumenter tanpa iklan. Bisa dipakai di 4 layar bersamaan dengan kualitas tertinggi. Termasuk akses download untuk offline viewing di semua perangkat. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "25000" },
+        { "label": "3 Bulan", "price": "65000", "popular": true },
+        { "label": "12 Bulan", "price": "200000" }
+      ],
+      "features": ["4K Ultra HD + HDR", "4 Layar bersamaan", "Download offline semua device", "Tanpa iklan"],
+      "active": true,
+      "popular": true,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "spotify-premium",
+      "name": "Spotify Premium",
+      "domain": "spotify.com",
+      "category": "Music",
+      "shortDescription": "Spotify Premium tanpa iklan, download lagu, kualitas audio HQ.",
+      "longDescription": "Akun Spotify Premium resmi. Dengarkan jutaan lagu tanpa iklan, download untuk offline listening, dan nikmati kualitas audio tinggi. Bisa digunakan di semua perangkat: HP, tablet, desktop, dan speaker. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "15000" },
+        { "label": "3 Bulan", "price": "40000", "popular": true },
+        { "label": "12 Bulan", "price": "130000" }
+      ],
+      "features": ["Tanpa iklan", "Download lagu offline", "Kualitas audio HQ", "Skip tanpa batas"],
+      "active": true,
+      "popular": true,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "canva-pro",
+      "name": "Canva Pro",
+      "domain": "canva.com",
+      "category": "Design",
+      "shortDescription": "Canva Pro akses template premium, elemen, foto, dan AI tools.",
+      "longDescription": "Akun Canva Pro resmi dengan akses penuh ke jutaan template premium, elemen, stok foto, dan video. Termasuk fitur Background Remover, Magic Resize, Brand Kit, dan AI design tools. Cocok untuk content creator, social media manager, dan desainer. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "15000" },
+        { "label": "12 Bulan", "price": "95000", "popular": true }
+      ],
+      "features": ["Jutaan template premium", "Background Remover", "Magic Resize & Brand Kit", "Stok foto & video premium"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "capcut-pro",
+      "name": "CapCut Pro",
+      "domain": "capcut.com",
+      "category": "Video Editor",
+      "shortDescription": "CapCut Pro akses efek, filter, dan tools edit video premium.",
+      "longDescription": "Akun CapCut Pro resmi dengan akses ke semua efek, filter, transisi, dan font premium. Bisa export tanpa watermark dengan kualitas hingga 4K 60fps. Termasuk fitur AI seperti auto caption, background removal, dan body effects. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "15000" },
+        { "label": "12 Bulan", "price": "95000", "popular": true }
+      ],
+      "features": ["Export tanpa watermark 4K", "Efek & filter premium", "Auto caption AI", "Background removal video"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "youtube-premium",
+      "name": "YouTube Premium",
+      "domain": "youtube.com",
+      "category": "Streaming",
+      "shortDescription": "YouTube Premium tanpa iklan, background play, YouTube Music.",
+      "longDescription": "Akun YouTube Premium resmi. Tonton video tanpa iklan, putar di background saat layar mati, dan download video untuk offline. Termasuk akses YouTube Music Premium dengan jutaan lagu tanpa iklan. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "15000" },
+        { "label": "3 Bulan", "price": "40000", "popular": true },
+        { "label": "12 Bulan", "price": "130000" }
+      ],
+      "features": ["Tanpa iklan", "Background play", "Download video offline", "YouTube Music Premium"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "disney-plus",
+      "name": "Disney+ Hotstar",
+      "domain": "disneyplus.com",
+      "category": "Streaming",
+      "shortDescription": "Disney+ Hotstar akses film Disney, Marvel, Star Wars, Pixar.",
+      "longDescription": "Akun Disney+ Hotstar resmi dengan akses ke seluruh katalog film dan series dari Disney, Marvel, Star Wars, Pixar, dan National Geographic. Kualitas hingga 4K Ultra HD. Bisa digunakan di 4 perangkat bersamaan. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "20000" },
+        { "label": "3 Bulan", "price": "50000", "popular": true },
+        { "label": "12 Bulan", "price": "170000" }
+      ],
+      "features": ["4K Ultra HD", "4 Perangkat bersamaan", "Download offline", "Disney, Marvel, Star Wars, Pixar"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "chatgpt-plus",
+      "name": "ChatGPT Plus",
+      "domain": "chatgpt.com",
+      "category": "AI Tools",
+      "shortDescription": "ChatGPT Plus akses GPT-4, DALL-E, priority access, plugin.",
+      "longDescription": "Akun ChatGPT Plus resmi dengan akses ke GPT-4, DALL-E image generation, browsing, dan advanced data analysis. Priority access saat server sibuk, respons lebih cepat, dan akses fitur baru lebih dulu. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "50000", "popular": true }
+      ],
+      "features": ["Akses GPT-4", "DALL-E image generation", "Browsing & data analysis", "Priority access & fitur baru"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "adobe-cc",
+      "name": "Adobe Creative Cloud",
+      "domain": "photoshop.com",
+      "category": "Design",
+      "shortDescription": "Adobe CC semua aplikasi: Photoshop, Illustrator, Premiere Pro.",
+      "longDescription": "Akun Adobe Creative Cloud resmi dengan akses ke semua aplikasi Adobe: Photoshop, Illustrator, Premiere Pro, After Effects, Lightroom, InDesign, dan lainnya. Termasuk 100GB cloud storage, Adobe Fonts, dan Adobe Portfolio. Garansi penuh selama masa berlangganan.",
+      "variants": [
+        { "label": "1 Bulan", "price": "50000" },
+        { "label": "3 Bulan", "price": "130000", "popular": true },
+        { "label": "12 Bulan", "price": "400000" }
+      ],
+      "features": ["Semua aplikasi Adobe", "100GB cloud storage", "Adobe Fonts & Portfolio", "Update versi terbaru"],
+      "active": true,
+      "popular": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "broadcasts": []
+}
