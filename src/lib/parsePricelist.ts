@@ -332,30 +332,31 @@ export function parsePricelist(text: string): ParsedProduct[] {
   const products: ParsedProduct[] = [];
   let current: ParsedProduct | null = null;
 
+  const startFromApp = (app: KnownApp): ParsedProduct => ({
+    name: app.name,
+    domain: app.domain,
+    category: app.category,
+    shortDescription: app.short,
+    longDescription: app.long,
+    features: [...app.features],
+    variants: [],
+    matched: true,
+  });
+
   const startProduct = (rawName: string): ParsedProduct => {
     const app = matchApp(rawName);
+    if (app) return startFromApp(app);
     const tidyName = rawName.replace(/\s+/g, ' ').trim();
-    return app
-      ? {
-          name: app.name,
-          domain: app.domain,
-          category: app.category,
-          shortDescription: app.short,
-          longDescription: app.long,
-          features: [...app.features],
-          variants: [],
-          matched: true,
-        }
-      : {
-          name: tidyName,
-          domain: '',
-          category: 'Lainnya',
-          shortDescription: `Akun ${tidyName} siap pakai.`,
-          longDescription: `Akun ${tidyName}. Detail lengkap dan ketentuan garansi bisa ditanyakan ke admin sebelum order.`,
-          features: [],
-          variants: [],
-          matched: false,
-        };
+    return {
+      name: tidyName,
+      domain: '',
+      category: 'Lainnya',
+      shortDescription: `Akun ${tidyName} siap pakai.`,
+      longDescription: `Akun ${tidyName}. Detail lengkap dan ketentuan garansi bisa ditanyakan ke admin sebelum order.`,
+      features: [],
+      variants: [],
+      matched: false,
+    };
   };
 
   const pushCurrent = () => {
@@ -367,59 +368,82 @@ export function parsePricelist(text: string): ParsedProduct[] {
     const line = cleanLine(rawLine);
     if (!line) continue;
     if (looksLikeHeader(line)) continue;
+    // baris dekoratif: ━ ╭ ╮ ✦ 〔 〕 dan kawan-kawan
+    if (/[\u2500-\u257F\u2726\u3014\u3015]/u.test(line)) continue;
 
-    const durMatch = line.match(DURATION_RE);
-    const hasDigit = /\d/.test(line);
+    // 1) coba ekstrak harga di akhir baris
+    const priceMatch = line.match(
+      /(?::|=|\s)\s*(?:rp\.?\s*)?([\d][\d.,]*)\s*(jt|juta|k|rb|ribu)?\s*$/i
+    );
 
-    if (!hasDigit) {
-      // baris tanpa angka: nama produk baru
-      pushCurrent();
-      current = startProduct(line);
-      continue;
-    }
+    if (priceMatch && priceMatch.index !== undefined) {
+      const price = parsePrice(`${priceMatch[1]}${priceMatch[2] ?? ''}`);
 
-    if (durMatch && durMatch.index !== undefined) {
-      const prefix = line.slice(0, durMatch.index).trim();
-      const after = line.slice(durMatch.index + durMatch[0].length);
-      const price = parsePrice(after);
-
-      if (!price) {
-        // ada durasi tapi harga tidak terbaca, anggap baris nama
-        pushCurrent();
-        current = startProduct(line);
-        continue;
-      }
-
-      const label = normalizeDuration(durMatch[1], durMatch[2]);
-
-      // prefix cukup panjang dan mengandung huruf: produk baru di satu baris
-      if (prefix.length >= 2 && /[a-z]/i.test(prefix)) {
-        pushCurrent();
-        current = startProduct(prefix);
-      }
-      if (!current) current = startProduct(prefix || 'Produk');
-
-      current.variants.push({ label, price });
-      continue;
-    }
-
-    // tidak ada durasi: coba ambil harga dari akhir baris
-    const priceOnly = line.match(/([\d]+(?:[.,][\d]+)*\s*(?:jt|juta|k|rb|ribu)?)\s*$/i);
-    if (priceOnly) {
-      const price = parsePrice(priceOnly[1]);
-      const prefix = line.slice(0, priceOnly.index).replace(/[=:\-]+$/, '').trim();
       if (price) {
-        if (prefix.length >= 2 && /[a-z]/i.test(prefix)) {
-          pushCurrent();
-          current = startProduct(prefix);
+        let before = line.slice(0, priceMatch.index).replace(/\s+/g, ' ').trim();
+        // buang "Rp" dan sisa pemisah yang nyangkut di ujung (dari ": Rp6.000")
+        before = before.replace(/\s*rp\.?\s*$/i, '').replace(/[:=\-\s]+$/, '').trim();
+
+        if (before.length < 2) {
+          // baris hanya berisi harga: varian untuk produk yang sedang berjalan
+          if (!current) current = startProduct('Produk');
+          current.variants.push({ label: '1 Bulan', price });
+          continue;
         }
-        if (!current) current = startProduct(prefix || 'Produk');
+
+        const app = matchApp(before);
+        if (app) {
+          // produk dikenal: sisa teks setelah nama aplikasi jadi label varian
+          // contoh: "Netflix 2 User 1 Hari" -> label "2 User 1 Hari"
+          let label = before;
+          for (const k of app.keys) {
+            const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            if (re.test(label)) {
+              label = label.replace(re, ' ');
+              break;
+            }
+          }
+          label = label
+            .replace(/^[\s:•·\-]+/, '')
+            .replace(/[\s:=\-]+$/, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          if (!label) {
+            const d = before.match(DURATION_RE);
+            label = d ? normalizeDuration(d[1], d[2]) : '1 Bulan';
+          }
+          pushCurrent();
+          current = startFromApp(app);
+          current.variants.push({ label, price });
+          continue;
+        }
+
+        // tidak dikenal: coba pisah nama vs durasi
+        const durMatch = before.match(DURATION_RE);
+        if (durMatch && durMatch.index !== undefined) {
+          const prefix = before
+            .slice(0, durMatch.index)
+            .replace(/[\s:=\-]+$/, '')
+            .trim();
+          const label = normalizeDuration(durMatch[1], durMatch[2]);
+          if (prefix.length >= 2 && /[a-z]/i.test(prefix)) {
+            pushCurrent();
+            current = startProduct(prefix);
+          }
+          if (!current) current = startProduct(before);
+          current.variants.push({ label, price });
+          continue;
+        }
+
+        // tanpa durasi: seluruh teks jadi nama produk
+        pushCurrent();
+        current = startProduct(before);
         current.variants.push({ label: '1 Bulan', price });
         continue;
       }
     }
 
-    // sisanya diperlakukan sebagai nama produk
+    // tidak ada harga terbaca: perlakukan sebagai nama produk
     pushCurrent();
     current = startProduct(line);
   }
@@ -433,7 +457,13 @@ export function parsePricelist(text: string): ParsedProduct[] {
     const exist = merged.get(key);
     if (exist) {
       for (const v of p.variants) {
-        if (!exist.variants.some((x) => x.label === v.label)) exist.variants.push(v);
+        // jangan buang varian dengan label sama, beri akhiran biar unik
+        let label = v.label;
+        let n = 2;
+        while (exist.variants.some((x) => x.label === label)) {
+          label = `${v.label} (${n++})`;
+        }
+        exist.variants.push({ ...v, label });
       }
     } else {
       merged.set(key, p);
