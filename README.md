@@ -38,8 +38,8 @@ Di belakangnya ada dashboard admin tersembunyi untuk kelola produk, kirim broadc
 ## Menjalankan Secara Lokal
 
 ```bash
-git clone https://github.com/riorizqi-dev/akun-premium-store.git
-cd akun-premium-store
+git clone https://github.com/riorizqi-dev/rfm-store.git
+cd rfm-store
 npm install
 cp .env.example .env.local
 ```
@@ -90,7 +90,7 @@ Endpoint gambar Logo.dev hanya menerima **publishable key** (`pk_...`). Secret k
 Buka `https://domain-kamu.com/<ADMIN_SECRET>`, misalnya:
 
 ```
-https://akun-premium-store.vercel.app/panel-x7k9m2p4q
+https://rfm-store.vercel.app/panel-x7k9m2p4q
 ```
 
 Login dengan `ADMIN_USERNAME` dan password yang hash-nya kamu simpan di `ADMIN_PASSWORD_HASH`.
