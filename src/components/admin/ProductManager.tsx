@@ -9,6 +9,7 @@ import {
   deleteProductAction,
 } from '@/app/admin/actions';
 import type { Product } from '@/lib/products';
+import { BulkImport } from './BulkImport';
 
 type Variant = { label: string; price: string; popular: boolean };
 
@@ -44,6 +45,7 @@ const smallInputClass =
 
 export function ProductManager({ products }: { products: Product[] }) {
   const [editing, setEditing] = useState<string | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -169,6 +171,28 @@ export function ProductManager({ products }: { products: Product[] }) {
       ...form,
       features: form.features.map((f, i) => (i === idx ? value : f)),
     });
+
+  if (bulkOpen) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">Impor Pricelist</h2>
+          <button
+            onClick={() => setBulkOpen(false)}
+            className="text-sm text-zinc-400 hover:text-white"
+          >
+            Batal
+          </button>
+        </div>
+        <BulkImport
+          onDone={() => {
+            setBulkOpen(false);
+            setSuccess('Produk berhasil diimpor.');
+          }}
+        />
+      </div>
+    );
+  }
 
   if (editing) {
     return (
@@ -434,16 +458,25 @@ export function ProductManager({ products }: { products: Product[] }) {
         </p>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">
           Daftar Produk ({products.length})
         </h2>
-        <button
-          onClick={startAdd}
-          className="btn-primary px-4 py-2 text-sm"
-        >
-          + Tambah Produk
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setBulkOpen(true);
+              setError('');
+              setSuccess('');
+            }}
+            className="btn-secondary px-4 py-2 text-sm"
+          >
+            Impor Pricelist
+          </button>
+          <button onClick={startAdd} className="btn-primary px-4 py-2 text-sm">
+            + Tambah Produk
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">

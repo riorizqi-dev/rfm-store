@@ -18,6 +18,7 @@ import {
   updateSettings,
   addBroadcast,
   getSettings,
+  getAllProductsAdmin,
 } from '@/lib/products';
 import { waLink } from '@/lib/utils';
 
@@ -202,6 +203,63 @@ export async function updateSettingsAction(formData: FormData) {
     return { success: true };
   } catch {
     return { error: 'Gagal menyimpan pengaturan.' };
+  }
+}
+
+export async function bulkImportAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) throw new Error('Unauthorized');
+
+  let items: unknown;
+  try {
+    items = JSON.parse((formData.get('items') as string) || '[]');
+  } catch {
+    return { error: 'Data impor tidak valid.' };
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return { error: 'Tidak ada produk untuk diimpor.' };
+  }
+  if (items.length > 100) {
+    return { error: 'Maksimal 100 produk per impor.' };
+  }
+
+  const replaceAll = formData.get('replaceAll') === 'true';
+
+  const prepared: ReturnType<typeof productSchema.parse>[] = [];
+  for (const raw of items) {
+    const r = raw as Record<string, unknown>;
+    const candidate = {
+      name: sanitizeInput(String(r.name ?? ''), 100),
+      domain: sanitizeInput(String(r.domain ?? ''), 100),
+      category: sanitizeInput(String(r.category ?? 'Lainnya'), 50),
+      shortDescription: sanitizeInput(String(r.shortDescription ?? ''), 200),
+      longDescription: sanitizeInput(String(r.longDescription ?? ''), 2000),
+      variants: Array.isArray(r.variants) ? r.variants : [],
+      features: Array.isArray(r.features) ? r.features : [],
+      active: r.active !== false,
+      popular: r.popular === true,
+    };
+    const parsed = productSchema.safeParse(candidate);
+    if (!parsed.success) {
+      return {
+        error: `Produk "${candidate.name || 'tanpa nama'}" tidak valid: ${parsed.error.issues[0].message}`,
+      };
+    }
+    prepared.push(parsed.data);
+  }
+
+  try {
+    if (replaceAll) {
+      const existing = await getAllProductsAdmin();
+      for (const p of existing) await deleteProduct(p.id);
+    }
+    for (const p of prepared) await addProduct(p);
+
+    revalidatePath('/');
+    revalidatePath(`/${ADMIN_SECRET}/dashboard`);
+    return { success: true, count: prepared.length };
+  } catch {
+    return { error: 'Gagal menyimpan produk hasil impor.' };
   }
 }
 
