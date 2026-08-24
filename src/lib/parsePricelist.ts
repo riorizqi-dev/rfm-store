@@ -311,10 +311,14 @@ function cleanLine(line: string): string {
 function looksLikeHeader(line: string): boolean {
   const l = line.toLowerCase();
   return (
-    /^(list|price ?list|daftar|harga|promo|ready|stok|open|order|format|note|catatan|syarat|garansi|wa|admin|info)\b/.test(
+    /^(list|price ?list|daftar|harga|promo|ready|stok|open|order|format|notes?|note's|catatan|syarat|ketentuan|kebijakan|snk|garansi|wa|admin|info)\b/.test(
       l
     ) || /^[=\-–—_~*]{3,}$/.test(line)
   );
+}
+
+function titleCase(s: string): string {
+  return s.replace(/\w+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
 }
 
 /**
@@ -364,12 +368,56 @@ export function parsePricelist(text: string): ParsedProduct[] {
     current = null;
   };
 
+  // konteks section (✦ CAPCUT PRIVATE -> "Private") untuk label varian
+  let sectionContext: string | null = null;
+  let notesMode = false;
+  const notesBuffer: string[] = [];
+
   for (const rawLine of lines) {
     const line = cleanLine(rawLine);
     if (!line) continue;
     if (looksLikeHeader(line)) continue;
-    // baris dekoratif: ━ ╭ ╮ ✦ 〔 〕 dan kawan-kawan
-    if (/[\u2500-\u257F\u2726\u3014\u3015]/u.test(line)) continue;
+    // baris dekoratif: ━ ╭ ╮ 〔 〕 dan kawan-kawan
+    if (/[\u2500-\u257F\u3014\u3015]/u.test(line)) continue;
+
+    // baris header section ✦ / ✧: jadi konteks label varian atau mode catatan
+    if (/^\s*[✦✧]/u.test(rawLine)) {
+      const headerText = line.replace(/^[✦✧]\s*/u, '').trim();
+      const lower = headerText.toLowerCase();
+      const NOTES_WORDS = ['note', 'kebijakan', 'snk', 'ketentuan', 'syarat', 'garansi'];
+      const CONTEXT_REJECT = [
+        'harga', 'price', 'ready', 'stok', 'order', 'info', 'promo', 'open',
+        'list', 'admin', 'whatsapp', 'format', 'policy', 'baru',
+      ];
+
+      if (headerText.endsWith(':') || NOTES_WORDS.some((w) => lower.includes(w))) {
+        if (NOTES_WORDS.some((w) => lower.includes(w))) notesMode = true;
+        sectionContext = null;
+        continue;
+      }
+
+      // buang nama aplikasi dari header, sisanya jadi konteks
+      let rest = headerText;
+      for (const app of KNOWN_APPS) {
+        for (const k of app.keys) {
+          const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+          if (re.test(rest)) rest = rest.replace(re, ' ');
+        }
+      }
+      rest = rest.replace(/\s+/g, ' ').replace(/^[\s\-/&]+|[\s\-/&]+$/g, '').trim();
+      const lowerRest = rest.toLowerCase();
+      if (
+        rest.length >= 3 &&
+        rest.length <= 18 &&
+        !CONTEXT_REJECT.some((w) => lowerRest.includes(w))
+      ) {
+        sectionContext = titleCase(rest);
+        notesMode = false;
+      } else {
+        sectionContext = null;
+      }
+      continue;
+    }
 
     // 1) coba ekstrak harga di akhir baris
     const priceMatch = line.match(
@@ -380,6 +428,7 @@ export function parsePricelist(text: string): ParsedProduct[] {
       const price = parsePrice(`${priceMatch[1]}${priceMatch[2] ?? ''}`);
 
       if (price) {
+        notesMode = false;
         let before = line.slice(0, priceMatch.index).replace(/\s+/g, ' ').trim();
         // buang "Rp" dan sisa pemisah yang nyangkut di ujung (dari ": Rp6.000")
         before = before.replace(/\s*rp\.?\s*$/i, '').replace(/[:=\-\s]+$/, '').trim();
@@ -408,9 +457,18 @@ export function parsePricelist(text: string): ParsedProduct[] {
             .replace(/[\s:=\-]+$/, '')
             .replace(/\s+/g, ' ')
             .trim();
+          // "Pro"/"Premium" di awal label redundan dengan nama produk
+          label = label.replace(/^(pro|premium|vip|gold)\s+/i, '').trim();
           if (!label) {
             const d = before.match(DURATION_RE);
             label = d ? normalizeDuration(d[1], d[2]) : '1 Bulan';
+          }
+          // konteks section: "✦ CAPCUT PRIVATE" -> "Private 7 Hari"
+          if (
+            sectionContext &&
+            !label.toLowerCase().includes(sectionContext.toLowerCase())
+          ) {
+            label = `${sectionContext} ${label}`;
           }
           pushCurrent();
           current = startFromApp(app);
@@ -443,7 +501,23 @@ export function parsePricelist(text: string): ParsedProduct[] {
       }
     }
 
-    // tidak ada harga terbaca: perlakukan sebagai nama produk
+    // tidak ada harga terbaca
+    if (/^\s*[•\-*·]/u.test(rawLine)) {
+      // baris bullet tanpa harga: catatan / SnK, kumpulkan untuk deskripsi
+      const noteText = cleanLine(rawLine).replace(/^[\s:]+/, '').trim();
+      if (
+        notesMode &&
+        noteText.length >= 8 &&
+        noteText.length <= 300 &&
+        !/(admin|payment|bayar|chat\b|grup|group|transaksi|stok|order|snk)/i.test(noteText)
+      ) {
+        notesBuffer.push(noteText);
+      }
+      continue;
+    }
+
+    // sisanya: nama produk baru
+    notesMode = false;
     pushCurrent();
     current = startProduct(line);
   }
@@ -470,10 +544,25 @@ export function parsePricelist(text: string): ParsedProduct[] {
     }
   }
 
-  return Array.from(merged.values()).map((p) => ({
+  const list = Array.from(merged.values()).map((p) => ({
     ...p,
     variants: p.variants
       .slice()
       .sort((a, b) => parseInt(a.price, 10) - parseInt(b.price, 10)),
   }));
+
+  // catatan / SnK dari pricelist masuk ke deskripsi produk terakhir
+  if (notesBuffer.length > 0 && list.length > 0) {
+    const last = list[list.length - 1];
+    const extra = notesBuffer
+      .slice(0, 10)
+      .map((s) => s.slice(0, 200))
+      .join('\n');
+    last.longDescription = `${last.longDescription}\n\nSnK & Ketentuan:\n${extra}`.slice(
+      0,
+      1900
+    );
+  }
+
+  return list;
 }
