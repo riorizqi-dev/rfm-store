@@ -73,15 +73,27 @@ async function getSql(): Promise<any> {
       ssl: 'require',
       prepare: false,
       max: 3,
-      idle_timeout: 20,
+      idle_timeout: 5,
+      connect_timeout: 10,
     });
   }
   return sqlCache;
 }
 
-async function initSchema(): Promise<void> {
+// koneksi basi di serverless yang hangat: reset client lalu coba sekali lagi
+async function withSql<T>(fn: (sql: any) => Promise<T>): Promise<T> {
+  try {
+    const sql = await getSql();
+    return await fn(sql);
+  } catch {
+    sqlCache = null;
+    const sql = await getSql();
+    return await fn(sql);
+  }
+}
+
+async function initSchema(sql: any): Promise<void> {
   if (initDone) return;
-  const sql = await getSql();
 
   await sql`
     CREATE TABLE IF NOT EXISTS settings (
@@ -172,11 +184,12 @@ function rowToProduct(r: any): Product {
 
 export async function getAllProducts(): Promise<Product[]> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    const rows =
-      await sql`SELECT * FROM products WHERE active = TRUE ORDER BY popular DESC, created_at ASC`;
-    return rows.map(rowToProduct);
+    return withSql(async (sql) => {
+      await initSchema(sql);
+      const rows =
+        await sql`SELECT * FROM products WHERE active = TRUE ORDER BY popular DESC, created_at ASC`;
+      return rows.map(rowToProduct);
+    });
   }
   const data = await readJson();
   return data.products.filter((p) => p.active);
@@ -184,10 +197,11 @@ export async function getAllProducts(): Promise<Product[]> {
 
 export async function getAllProductsAdmin(): Promise<Product[]> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    const rows = await sql`SELECT * FROM products ORDER BY created_at ASC`;
-    return rows.map(rowToProduct);
+    return withSql(async (sql) => {
+      await initSchema(sql);
+      const rows = await sql`SELECT * FROM products ORDER BY created_at ASC`;
+      return rows.map(rowToProduct);
+    });
   }
   const data = await readJson();
   return data.products;
@@ -195,10 +209,11 @@ export async function getAllProductsAdmin(): Promise<Product[]> {
 
 export async function getProduct(id: string): Promise<Product | null> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    const rows = await sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`;
-    return rows.length > 0 ? rowToProduct(rows[0]) : null;
+    return withSql(async (sql) => {
+      await initSchema(sql);
+      const rows = await sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`;
+      return rows.length > 0 ? rowToProduct(rows[0]) : null;
+    });
   }
   const data = await readJson();
   return data.products.find((p) => p.id === id) || null;
@@ -206,9 +221,10 @@ export async function getProduct(id: string): Promise<Product | null> {
 
 export async function getSettings(): Promise<Settings> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    const rows = await sql`SELECT data FROM settings WHERE id = 1 LIMIT 1`;
+    const rows = await withSql(async (sql) => {
+      await initSchema(sql);
+      return sql`SELECT data FROM settings WHERE id = 1 LIMIT 1`;
+    });
     if (rows.length > 0) return rows[0].data as Settings;
   }
   const data = await readJson();
@@ -217,16 +233,17 @@ export async function getSettings(): Promise<Settings> {
 
 export async function getBroadcasts(): Promise<Broadcast[]> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    const rows =
-      await sql`SELECT * FROM broadcasts ORDER BY created_at DESC LIMIT 50`;
-    return rows.map((r: any) => ({
-      id: r.id,
-      message: r.message,
-      waLink: r.wa_link,
-      createdAt: new Date(r.created_at).toISOString(),
-    }));
+    return withSql(async (sql) => {
+      await initSchema(sql);
+      const rows =
+        await sql`SELECT * FROM broadcasts ORDER BY created_at DESC LIMIT 50`;
+      return rows.map((r: any) => ({
+        id: r.id,
+        message: r.message,
+        waLink: r.wa_link,
+        createdAt: new Date(r.created_at).toISOString(),
+      }));
+    });
   }
   const data = await readJson();
   return data.broadcasts;
@@ -240,19 +257,20 @@ export async function addProduct(input: ProductInput): Promise<Product> {
   };
 
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    await sql`
-      INSERT INTO products (
-        id, name, domain, category, short_description,
-        long_description, variants, features, active, popular, created_at
-      ) VALUES (
-        ${product.id}, ${product.name}, ${product.domain}, ${product.category},
-        ${product.shortDescription}, ${product.longDescription},
-        ${sql.json(product.variants as any)}, ${sql.json(product.features as any)},
-        ${product.active}, ${product.popular}, ${product.createdAt}
-      )
-    `;
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`
+        INSERT INTO products (
+          id, name, domain, category, short_description,
+          long_description, variants, features, active, popular, created_at
+        ) VALUES (
+          ${product.id}, ${product.name}, ${product.domain}, ${product.category},
+          ${product.shortDescription}, ${product.longDescription},
+          ${sql.json(product.variants as any)}, ${sql.json(product.features as any)},
+          ${product.active}, ${product.popular}, ${product.createdAt}
+        )
+      `;
+    });
     return product;
   }
 
@@ -267,21 +285,22 @@ export async function updateProduct(
   input: ProductInput
 ): Promise<void> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    await sql`
-      UPDATE products SET
-        name = ${input.name},
-        domain = ${input.domain},
-        category = ${input.category},
-        short_description = ${input.shortDescription},
-        long_description = ${input.longDescription},
-        variants = ${sql.json(input.variants as any)},
-        features = ${sql.json(input.features as any)},
-        active = ${input.active},
-        popular = ${input.popular}
-      WHERE id = ${id}
-    `;
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`
+        UPDATE products SET
+          name = ${input.name},
+          domain = ${input.domain},
+          category = ${input.category},
+          short_description = ${input.shortDescription},
+          long_description = ${input.longDescription},
+          variants = ${sql.json(input.variants as any)},
+          features = ${sql.json(input.features as any)},
+          active = ${input.active},
+          popular = ${input.popular}
+        WHERE id = ${id}
+      `;
+    });
     return;
   }
 
@@ -299,9 +318,10 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string): Promise<void> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    await sql`DELETE FROM products WHERE id = ${id}`;
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`DELETE FROM products WHERE id = ${id}`;
+    });
     return;
   }
   const data = await readJson();
@@ -311,12 +331,13 @@ export async function deleteProduct(id: string): Promise<void> {
 
 export async function updateSettings(input: Settings): Promise<void> {
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    await sql`
-      INSERT INTO settings (id, data) VALUES (1, ${sql.json(input as any)})
-      ON CONFLICT (id) DO UPDATE SET data = ${sql.json(input as any)}
-    `;
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`
+        INSERT INTO settings (id, data) VALUES (1, ${sql.json(input as any)})
+        ON CONFLICT (id) DO UPDATE SET data = ${sql.json(input as any)}
+      `;
+    });
     return;
   }
   const data = await readJson();
@@ -336,12 +357,13 @@ export async function addBroadcast(
   };
 
   if (usePg) {
-    await initSchema();
-    const sql = await getSql();
-    await sql`
-      INSERT INTO broadcasts (id, message, wa_link, created_at)
-      VALUES (${broadcast.id}, ${broadcast.message}, ${broadcast.waLink}, ${broadcast.createdAt})
-    `;
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`
+        INSERT INTO broadcasts (id, message, wa_link, created_at)
+        VALUES (${broadcast.id}, ${broadcast.message}, ${broadcast.waLink}, ${broadcast.createdAt})
+      `;
+    });
     return broadcast;
   }
 
