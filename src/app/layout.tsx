@@ -21,9 +21,34 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://rfm-store.vercel.app'),
   title: 'RFMstore | Aplikasi Premium Termurah & Terpercaya',
   description:
     'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi sesuai aplikasi, transaksi via WhatsApp.',
+  openGraph: {
+    title: 'RFMstore | Aplikasi Premium Termurah & Terpercaya',
+    description:
+      'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi sesuai aplikasi, transaksi via WhatsApp.',
+    url: 'https://www.ryuuka.web.id',
+    siteName: 'RFMstore',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'RFMstore - Aplikasi Premium Termurah & Terpercaya',
+      },
+    ],
+    locale: 'id_ID',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RFMstore | Aplikasi Premium Termurah & Terpercaya',
+    description:
+      'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi sesuai aplikasi, transaksi via WhatsApp.',
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({
