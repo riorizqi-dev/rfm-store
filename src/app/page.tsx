@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
+import { BroadcastTicker } from '@/components/BroadcastTicker';
 import { Ticker } from '@/components/Ticker';
 import { WhyUs } from '@/components/WhyUs';
 import { ProductSection } from '@/components/ProductSection';
@@ -7,7 +8,7 @@ import { HowToBuy } from '@/components/HowToBuy';
 import { FAQ } from '@/components/FAQ';
 import { CTASection } from '@/components/CTASection';
 import { Footer } from '@/components/Footer';
-import { getAllProducts, getSettings } from '@/lib/products';
+import { getAllProducts, getSettings, getBroadcasts } from '@/lib/products';
 
 // selalu render fresh biar perubahan dari dashboard admin langsung kelihatan
 export const dynamic = 'force-dynamic';
@@ -15,9 +16,14 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   let products: Awaited<ReturnType<typeof getAllProducts>> = [];
   let settings: Awaited<ReturnType<typeof getSettings>> | null = null;
+  let broadcasts: Awaited<ReturnType<typeof getBroadcasts>> = [];
 
   try {
-    [products, settings] = await Promise.all([getAllProducts(), getSettings()]);
+    [products, settings, broadcasts] = await Promise.all([
+      getAllProducts(),
+      getSettings(),
+      getBroadcasts(),
+    ]);
   } catch {
     return (
       <main>
@@ -55,6 +61,7 @@ export default async function HomePage() {
       <Navbar storeName={settings.storeName} />
       <main>
         <Hero settings={settings} />
+        <BroadcastTicker broadcasts={broadcasts} />
         <Ticker products={products} />
         <WhyUs settings={settings} />
         <ProductSection products={products} settings={settings} />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { broadcastAction } from '@/app/admin/actions';
+import { broadcastAction, deleteBroadcastAction } from '@/app/admin/actions';
 import type { Broadcast, Settings } from '@/lib/products';
 
 export function BroadcastForm({
@@ -33,13 +33,24 @@ export function BroadcastForm({
     });
   };
 
+  const handleDelete = (id: string) => {
+    if (!window.confirm('Hapus broadcast ini? Sekaligus hilang dari website.'))
+      return;
+    const formData = new FormData();
+    formData.set('id', id);
+    startTransition(async () => {
+      await deleteBroadcastAction(formData);
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold">Broadcast WhatsApp</h2>
+        <h2 className="text-lg font-bold">Broadcast / Info Berjalan</h2>
         <p className="mt-1 text-sm text-zinc-400">
-          Tulis pesan, lalu buat link WhatsApp untuk dikirim ke kontak atau
-          grup.
+          Pesan yang lo tulis di sini langsung muncul sebagai teks berjalan di
+          halaman utama website. Sekalian dibuatkan link WhatsApp kalau mau
+          disebar ke grup.
         </p>
       </div>
 
@@ -47,8 +58,8 @@ export function BroadcastForm({
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Tulis pesan broadcast di sini..."
-          rows={4}
+          placeholder="cth: PROMO LEBARAN! Netflix 1 Bulan cuma 12rb, stok terbatas!"
+          rows={3}
           maxLength={500}
           required
           className="w-full rounded-lg border border-ink-border bg-ink px-4 py-3 text-white placeholder-zinc-500 focus:border-accent"
@@ -58,7 +69,7 @@ export function BroadcastForm({
           disabled={isPending || !message.trim()}
           className="btn-primary disabled:opacity-50"
         >
-          {isPending ? 'Membuat...' : 'Buat Link Broadcast'}
+          {isPending ? 'Memproses...' : 'Tayangkan di Website'}
         </button>
       </form>
 
@@ -71,7 +82,7 @@ export function BroadcastForm({
       {result?.waLink && (
         <div className="rounded-xl border border-accent/30 bg-accent/10 p-4">
           <p className="text-sm text-accent">
-            Link broadcast berhasil dibuat:
+            Broadcast tayang di website. Link WhatsApp-nya juga jadi:
           </p>
           <a
             href={result.waLink}
@@ -84,36 +95,54 @@ export function BroadcastForm({
         </div>
       )}
 
-      {broadcasts.length > 0 && (
-        <div>
-          <h3 className="mb-2 text-sm font-bold text-zinc-300">
-            Riwayat Broadcast
-          </h3>
+      <div>
+        <h3 className="mb-2 text-sm font-bold text-zinc-300">
+          Broadcast Aktif ({broadcasts.length})
+        </h3>
+        {broadcasts.length === 0 ? (
+          <p className="text-sm text-zinc-500">
+            Belum ada broadcast. Yang tampil di web maksimal 5 terbaru.
+          </p>
+        ) : (
           <div className="space-y-2">
-            {broadcasts.map((b) => (
+            {broadcasts.map((b, idx) => (
               <div
                 key={b.id}
                 className="rounded-lg border border-ink-border bg-ink-card p-3"
               >
-                <p className="text-sm text-zinc-300">{b.message}</p>
-                <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 flex-1 break-words text-sm text-zinc-300">
+                    {b.message}
+                  </p>
+                  <button
+                    onClick={() => handleDelete(b.id)}
+                    disabled={isPending}
+                    className="shrink-0 text-xs text-zinc-500 transition-colors hover:text-red-400 disabled:opacity-50"
+                  >
+                    Hapus
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
                   <span className="text-xs text-zinc-500">
                     {new Date(b.createdAt).toLocaleString('id-ID')}
+                    {idx < 5
+                      ? ' · tayang di web'
+                      : ' · tidak tayang (lebih dari 5)'}
                   </span>
                   <a
                     href={b.waLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-accent hover:text-accent-bright"
+                    className="shrink-0 text-xs text-accent hover:text-accent-bright"
                   >
-                    Buka link
+                    Buka link WA
                   </a>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

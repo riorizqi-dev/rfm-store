@@ -374,6 +374,19 @@ export async function addBroadcast(
   return broadcast;
 }
 
+export async function deleteBroadcast(id: string): Promise<void> {
+  if (usePg) {
+    await withSql(async (sql) => {
+      await initSchema(sql);
+      await sql`DELETE FROM broadcasts WHERE id = ${id}`;
+    });
+    return;
+  }
+  const data = await readJson();
+  data.broadcasts = data.broadcasts.filter((b) => b.id !== id);
+  await writeJson(data);
+}
+
 export function isDatabaseMode(): boolean {
   return usePg;
 }

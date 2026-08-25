@@ -17,6 +17,7 @@ import {
   deleteProduct,
   updateSettings,
   addBroadcast,
+  deleteBroadcast,
   getSettings,
   getAllProductsAdmin,
 } from '@/lib/products';
@@ -278,9 +279,27 @@ export async function broadcastAction(formData: FormData) {
 
   try {
     await addBroadcast(message, link);
+    revalidatePath('/');
     revalidatePath(`/${ADMIN_SECRET}/dashboard`);
     return { success: true, waLink: link };
   } catch {
     return { error: 'Gagal membuat broadcast.' };
+  }
+}
+
+export async function deleteBroadcastAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) throw new Error('Unauthorized');
+
+  const id = (formData.get('id') as string) || '';
+  if (!id) return { error: 'ID broadcast tidak valid.' };
+
+  try {
+    await deleteBroadcast(id);
+    revalidatePath('/');
+    revalidatePath(`/${ADMIN_SECRET}/dashboard`);
+    return { success: true };
+  } catch {
+    return { error: 'Gagal menghapus broadcast.' };
   }
 }
