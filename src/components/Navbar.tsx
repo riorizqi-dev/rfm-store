@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RFMLogo } from './RFMLogo';
 
 type NavbarProps = {
   storeName: string;
@@ -33,20 +34,7 @@ export function Navbar({ storeName }: NavbarProps) {
     >
       <div className="mx-auto flex h-[62px] max-w-[1180px] items-center justify-between px-6">
         <a href="#" className="flex items-center gap-2.5">
-          <span className="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-accent">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#171b08"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </span>
+          <RFMLogo size={30} />
           <span className="font-disp text-[1.05rem] font-bold tracking-tight text-body">
             {storeName}
           </span>
