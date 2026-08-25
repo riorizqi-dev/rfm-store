@@ -7,18 +7,19 @@ type HeroProps = {
 
 export function Hero({ settings }: HeroProps) {
   return (
-    <section className="relative z-[1] mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-10 overflow-hidden px-6 pb-16 pt-[130px] lg:grid-cols-[1.05fr_.95fr] lg:gap-14 lg:pt-[150px]">
-      {/* ambient glow background */}
+    <section className="relative z-[1] overflow-hidden">
+      {/* ambient glow: nempel ke tepi viewport biar kiri-kanan seimbang */}
       <div
         aria-hidden
-        className="hero-glow glow-lime animate-drift -left-24 -top-24 h-[420px] w-[420px]"
+        className="hero-glow glow-lime animate-drift -left-40 -top-40 h-[560px] w-[560px]"
       />
       <div
         aria-hidden
-        className="hero-glow glow-green animate-drift-slow right-0 top-40 h-[380px] w-[380px]"
+        className="hero-glow glow-green animate-drift-slow -right-32 top-32 h-[480px] w-[480px]"
       />
 
-      <div className="relative">
+      <div className="relative mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-10 px-6 pb-16 pt-[130px] lg:grid-cols-[1.05fr_.95fr] lg:gap-14 lg:pt-[150px]">
+        <div className="relative">
         <span className="mb-6 inline-flex items-center gap-2.5 rounded-md border border-ink-strong bg-accent-dim px-3.5 py-[7px] font-mono text-[0.72rem] font-medium uppercase tracking-[0.1em] text-accent">
           <span className="h-[7px] w-[7px] animate-blink rounded-full bg-accent" />
           {settings.tagline}
@@ -110,6 +111,7 @@ export function Hero({ settings }: HeroProps) {
             <span className="inline-block h-[1.05em] w-2 animate-blink bg-accent align-text-bottom" />
           </p>
         </div>
+      </div>
       </div>
     </section>
   );

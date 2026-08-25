@@ -34,7 +34,7 @@ export function Navbar({ storeName }: NavbarProps) {
     >
       <div className="mx-auto flex h-[62px] max-w-[1180px] items-center justify-between px-6">
         <a href="#" className="flex items-center gap-2.5">
-          <RFMLogo size={30} />
+          <RFMLogo size={38} />
           <span className="font-disp text-[1.05rem] font-bold tracking-tight text-body">
             {storeName}
           </span>

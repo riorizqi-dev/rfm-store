@@ -14,7 +14,8 @@ body {
 }
 
 /* background ala NVIDIA: grid garis tipis + glow lembut di atas.
-   Tujuan: identitas tech + memandu fokus ke hero. */
+   Tujuan: identitas tech + memandu fokus ke hero. Grid di-offset 28px
+   supaya garis pertama tidak nempel di tepi layar (kiri-kanan seimbang). */
 body::before {
   content: '';
   position: fixed;
@@ -22,13 +23,17 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 241, 88, 0.09), transparent),
-    linear-gradient(to right, rgba(201, 241, 88, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(201, 241, 88, 0.04) 1px, transparent 1px);
+    radial-gradient(ellipse 110% 55% at 50% -20%, rgba(201, 241, 88, 0.09), transparent),
+    linear-gradient(to right, rgba(201, 241, 88, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(201, 241, 88, 0.045) 1px, transparent 1px);
   background-size:
     100% 100%,
     56px 56px,
     56px 56px;
+  background-position:
+    0 0,
+    28px 0,
+    0 28px;
 }
 
 ::selection {
