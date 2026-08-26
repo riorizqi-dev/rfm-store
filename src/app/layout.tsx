@@ -21,7 +21,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://rfm-store.vercel.app'),
+  metadataBase: new URL('https://www.ryuuka.web.id'),
   title: 'RFMstore | Aplikasi Premium Termurah & Terpercaya',
   description:
     'Beli akun premium Netflix, Spotify, Canva, CapCut, YouTube, Disney+, ChatGPT, Adobe dengan harga termurah. Garansi sesuai aplikasi, transaksi via WhatsApp.',

@@ -1,5 +1,7 @@
 # RFMstore — Landing Page Jualan Akun Premium
 
+**Live:** [www.ryuuka.web.id](https://www.ryuuka.web.id)
+
 Landing page katalog produk digital (akun/aplikasi premium) dengan alur transaksi manual via WhatsApp. Pengunjung tidak perlu daftar, tidak ada cart, dan tidak ada payment gateway: mereka lihat produk, klik detail, lalu lanjut chat admin atau join grup WhatsApp.
 
 Di belakangnya ada dashboard admin tersembunyi untuk kelola produk, kirim broadcast, dan ubah info halaman tanpa menyentuh kode.
@@ -56,7 +58,7 @@ Buka `http://localhost:3000`.
 
 | Variable | Wajib | Keterangan |
 | --- | --- | --- |
-| `ADMIN_SECRET` | ya | Path rahasia dashboard admin, mis. `panel-x7k9m2p4q` |
+| `ADMIN_SECRET` | ya | Path rahasia dashboard admin. Jangan pernah commit nilai aslinya ke repo |
 | `ADMIN_USERNAME` | ya | Username login admin |
 | `ADMIN_PASSWORD_HASH` | ya | Hash bcrypt password admin |
 | `JWT_SECRET` | ya | String acak panjang untuk menandatangani session |
@@ -87,15 +89,15 @@ Endpoint gambar Logo.dev hanya menerima **publishable key** (`pk_...`). Secret k
 
 ## Akses Dashboard Admin
 
-Buka `https://domain-kamu.com/<ADMIN_SECRET>`, misalnya:
+Dashboard admin tidak di-link dari mana pun di halaman publik. Aksesnya lewat path rahasia yang lo tentuin sendiri lewat environment variable `ADMIN_SECRET`:
 
 ```
-https://rfm-store.vercel.app/panel-x7k9m2p4q
+https://domain-kamu.com/<ADMIN_SECRET>
 ```
-
-Login dengan `ADMIN_USERNAME` dan password yang hash-nya kamu simpan di `ADMIN_PASSWORD_HASH`.
 
 Path `/admin` dan `/admin/*` sengaja dialihkan ke halaman utama, jadi satu-satunya jalan masuk adalah lewat path rahasia. Halaman admin juga diberi `noindex` supaya tidak muncul di hasil pencarian.
+
+> **Praktik keamanan:** jangan pernah tulis nilai `ADMIN_SECRET` asli di README, screenshot, atau tempat publik lainnya. Kalau tidak sengaja kebocor, langsung ganti nilainya di environment variable lalu redeploy — path lama otomatis mati.
 
 ## Deploy ke Vercel
 
