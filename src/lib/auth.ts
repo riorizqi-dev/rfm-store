@@ -16,16 +16,25 @@ export async function verifyCredentials(
   password: string
 ): Promise<boolean> {
   const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  const plainPassword = process.env.ADMIN_PASSWORD || 'rio216868';
   const hash = process.env.ADMIN_PASSWORD_HASH;
 
   if (username !== adminUser) return false;
-  if (!hash || !hash.startsWith('$2')) return false;
 
-  try {
-    return await bcrypt.compare(password, hash);
-  } catch {
-    return false;
+  // 1. Cek langsung plain password (prioritas & termudah)
+  if (password === plainPassword) return true;
+
+  // 2. Fallback cek hash bcrypt
+  if (hash) {
+    try {
+      const cleanHash = hash.replace(/\\/g, '');
+      return await bcrypt.compare(password, cleanHash);
+    } catch {
+      return false;
+    }
   }
+
+  return false;
 }
 
 export async function createSession(username: string): Promise<void> {
