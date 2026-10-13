@@ -478,50 +478,35 @@ export function parsePricelist(text: string): ParsedProduct[] {
             label = d ? normalizeDuration(d[1], d[2]) : '1 Bulan';
           }
 
-          // Gabungkan konteks kategori (Main section + Sub section)
-          // Contoh: main = "Link", sub = "No Garansi" -> label = "[No Garansi] Link 1P2U 1 Bulan"
-          // atau: main = "Empass", sub = "Bulanan" -> label = "[Empass] 1 User 1 Bulan"
-          // atau: main = "Crack" -> label = "[Crack] Mixplan"
-          const prefixParts: string[] = [];
+          // Tentukan kategori/tier varian secara cerdas & bersih
+          let tierPrefix = '';
+          const subLower = (subSectionContext || '').toLowerCase();
+          const mainLower = (mainSectionContext || '').toLowerCase();
 
-          if (subSectionContext) {
-            const subLower = subSectionContext.toLowerCase();
-            if (subLower.includes('no garansi') || subLower.includes('nogar')) {
-              prefixParts.push('No Garansi');
-            } else if (subLower.includes('crack')) {
-              prefixParts.push('Crack');
-            }
+          if (subLower.includes('no garansi') || subLower.includes('nogar') || label.toLowerCase().includes('no garansi')) {
+            tierPrefix = '[No Garansi]';
+          } else if (mainLower.includes('crack') || subLower.includes('crack') || label.toLowerCase().includes('mixplan') || label.toLowerCase().includes('premplan')) {
+            tierPrefix = '[Crack]';
+          } else if (mainLower.includes('empass') || label.toLowerCase().includes('empass')) {
+            tierPrefix = '[Empass]';
+          } else if (mainLower.includes('link') || label.toLowerCase().includes('link')) {
+            tierPrefix = '[Link]';
+          } else if (mainLower.includes('anti limit') || subLower.includes('anti limit') || label.toLowerCase().includes('anti limit')) {
+            tierPrefix = '[Anti Limit]';
+          } else if (mainLower.includes('semi') || subLower.includes('semi') || label.toLowerCase().includes('semi')) {
+            tierPrefix = '[Semiprivate]';
+          } else if (mainLower.includes('private') || subLower.includes('private') || label.toLowerCase().includes('private')) {
+            tierPrefix = '[Private]';
+          } else if (mainSectionContext) {
+            tierPrefix = `[${mainSectionContext}]`;
           }
 
-          if (mainSectionContext) {
-            const mainLower = mainSectionContext.toLowerCase();
-            if (mainLower.includes('crack')) {
-              if (!prefixParts.includes('Crack')) prefixParts.push('Crack');
-            } else if (!prefixParts.some((p) => p.toLowerCase().includes(mainLower))) {
-              prefixParts.push(mainSectionContext);
-            }
-          }
-
-          if (subSectionContext) {
-            const subLower = subSectionContext.toLowerCase();
-            if (
-              !subLower.includes('no garansi') &&
-              !subLower.includes('nogar') &&
-              !subLower.includes('crack') &&
-              !subLower.includes('bulanan') &&
-              !subLower.includes('harian')
-            ) {
-              if (!prefixParts.some((p) => p.toLowerCase().includes(subLower))) {
-                prefixParts.push(subSectionContext);
-              }
-            }
-          }
-
-          // Pasang prefix jika label belum memilikinya
-          for (const p of prefixParts.reverse()) {
-            if (!label.toLowerCase().includes(p.toLowerCase())) {
-              label = `${p} - ${label}`;
-            }
+          if (tierPrefix && !label.includes(tierPrefix)) {
+            // Bersihkan jika ada nama tier yang kembar di dalam label
+            const cleanTierWord = tierPrefix.replace(/[\[\]]/g, '');
+            const reDup = new RegExp(`^${cleanTierWord}\\s*-\\s*`, 'i');
+            label = label.replace(reDup, '').trim();
+            label = `${tierPrefix} ${label}`;
           }
 
           pushCurrent();
