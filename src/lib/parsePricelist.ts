@@ -311,7 +311,7 @@ function cleanLine(line: string): string {
 function looksLikeHeader(line: string): boolean {
   const l = line.toLowerCase();
   return (
-    /^(list|price ?list|daftar|harga|promo|ready|stok|open|order|format|notes?|note's|catatan|syarat|ketentuan|kebijakan|snk|garansi|wa|admin|info)\b/.test(
+    /^(list|price ?list|daftar|harga|promo|ready|stok|open|order|format|notes?|note's|catatan|syarat|ketentuan|kebijakan|snk|garansi|benefit|keunggulan|fitur|wa|admin|info)\b/.test(
       l
     ) || /^[=\-–—_~*]{3,}$/.test(line)
   );
@@ -323,13 +323,6 @@ function titleCase(s: string): string {
 
 /**
  * Parse teks pricelist bebas menjadi daftar produk.
- * Mendukung dua gaya umum:
- *   A) nama di baris sendiri, varian di baris berikutnya
- *      NETFLIX
- *      1 bulan 25k
- *      3 bulan 65k
- *   B) satu baris satu produk
- *      Netflix 1 bulan 25k
  */
 export function parsePricelist(text: string): ParsedProduct[] {
   const lines = text.split(/\r?\n/);
@@ -373,91 +366,121 @@ export function parsePricelist(text: string): ParsedProduct[] {
   // Konteks sub-kategori (HARIAN, BULANAN, NO GARANSI, SEMI PRIVATE, dll)
   let subSectionContext: string | null = null;
   let notesMode = false;
+  let benefitMode = false;
   const notesBuffer: string[] = [];
 
   for (const rawLine of lines) {
     const line = cleanLine(rawLine);
     if (!line) continue;
-    if (looksLikeHeader(line)) continue;
     // baris dekoratif: ━ ╭ ╮ 〔 〕 dan kawan-kawan
     if (/[\u2500-\u257F\u3014\u3015]/u.test(line)) continue;
 
-    // baris header section ✦ / ✧: jadi konteks label varian atau mode catatan
+    // Deteksi baris header section ✦ / ✧
     if (/^\s*[✦✧]/u.test(rawLine)) {
       const headerText = line.replace(/^[✦✧]\s*/u, '').trim();
       const lower = headerText.toLowerCase();
-      const NOTES_WORDS = ['note', 'kebijakan', 'snk', 'ketentuan', 'syarat'];
-      const CONTEXT_REJECT = [
-        'harga', 'price', 'ready', 'stok', 'order', 'info', 'promo', 'open',
-        'list', 'admin', 'whatsapp', 'format', 'policy', 'baru',
-      ];
 
+      const NOTES_WORDS = ['note', 'kebijakan', 'snk', 'ketentuan', 'syarat'];
       if (headerText.endsWith(':') || NOTES_WORDS.some((w) => lower.includes(w))) {
-        if (NOTES_WORDS.some((w) => lower.includes(w))) notesMode = true;
+        notesMode = true;
+        benefitMode = false;
         mainSectionContext = null;
         subSectionContext = null;
         continue;
       }
 
-      // Identifikasi tipe khusus
+      if (lower.includes('benefit') || lower.includes('keunggulan') || lower.includes('fitur')) {
+        benefitMode = true;
+        notesMode = false;
+        continue;
+      }
+
+      notesMode = false;
+      benefitMode = false;
+
+      // Cek apakah header section ini membawa nama aplikasi baru / produk
+      const appInHeader = matchApp(headerText);
+      if (appInHeader) {
+        if (!current || normalizeKey(current.name) !== normalizeKey(appInHeader.name)) {
+          pushCurrent();
+          current = startFromApp(appInHeader);
+        }
+      }
+
+      // Identifikasi tipe khusus (misal NetCark / Crack)
       if (lower.includes('netcark') || lower.includes('netcrack') || lower.includes('crack')) {
         mainSectionContext = 'Crack';
         subSectionContext = null;
-        notesMode = false;
         continue;
       }
 
-      // buang nama aplikasi dari header, sisanya jadi konteks
-      let rest = headerText;
-      for (const app of KNOWN_APPS) {
-        for (const k of app.keys) {
-          const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i');
-          if (re.test(rest)) rest = rest.replace(re, ' ');
+      // Ekstrak konteks dari header (misal GEMINI PRO 18 BULAN -> 18 Bulan, atau NETFLIX LINK -> Link)
+      const durMatch = headerText.match(DURATION_RE);
+      if (durMatch) {
+        mainSectionContext = normalizeDuration(durMatch[1], durMatch[2]);
+      } else {
+        let rest = headerText;
+        for (const app of KNOWN_APPS) {
+          for (const k of app.keys) {
+            const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i');
+            if (re.test(rest)) rest = rest.replace(re, ' ');
+          }
+        }
+        rest = rest.replace(/\s+/g, ' ').replace(/^[\s\-/&]+|[\s\-/&]+$/g, '').trim();
+        const lowerRest = rest.toLowerCase();
+        const CONTEXT_REJECT = [
+          'harga', 'price', 'ready', 'stok', 'order', 'info', 'promo', 'open',
+          'list', 'admin', 'whatsapp', 'format', 'policy', 'baru',
+        ];
+
+        if (rest.length >= 2 && rest.length <= 25 && !CONTEXT_REJECT.some((w) => lowerRest.includes(w))) {
+          mainSectionContext = titleCase(rest);
+        } else {
+          mainSectionContext = null;
         }
       }
-      rest = rest.replace(/\s+/g, ' ').replace(/^[\s\-/&]+|[\s\-/&]+$/g, '').trim();
-      const lowerRest = rest.toLowerCase();
-
-      if (
-        rest.length >= 2 &&
-        rest.length <= 25 &&
-        !CONTEXT_REJECT.some((w) => lowerRest.includes(w))
-      ) {
-        mainSectionContext = titleCase(rest);
-        subSectionContext = null;
-        notesMode = false;
-      } else {
-        mainSectionContext = null;
-        subSectionContext = null;
-      }
+      subSectionContext = null;
       continue;
     }
 
-    // 1) coba ekstrak harga di akhir baris
+    // 1) coba ekstrak harga di baris
+    // PENTING: Jika hanya ada pemisah spasi tanpa "Rp" / "k" / "rb", jangan anggap nomor versi (seperti "Veo 3.1") sebagai harga.
     const priceMatch = line.match(
       /(?::|=|\s)\s*(?:rp\.?\s*)?([\d][\d.,]*)\s*(jt|juta|k|rb|ribu)?\s*$/i
     );
 
     if (priceMatch && priceMatch.index !== undefined) {
-      const price = parsePrice(`${priceMatch[1]}${priceMatch[2] ?? ''}`);
+      const matchedSeparatorAndPrice = priceMatch[0];
+      const hasCurrencyOrColon = /[:=]|rp|k|rb|ribu/i.test(matchedSeparatorAndPrice);
+      const rawNumStr = priceMatch[1];
+      const hasUnit = Boolean(priceMatch[2]);
 
-      if (price) {
-        notesMode = false;
+      // Jika nomor bertitik satu digit (seperti "3.1" atau "2.0") tanpa "Rp" atau "k", ini nomor versi bukan harga
+      const isVersionNumber = /^\d+\.\d{1,2}$/.test(rawNumStr) && !hasUnit && !/rp/i.test(matchedSeparatorAndPrice);
+
+      if (hasCurrencyOrColon && !isVersionNumber) {
+        const price = parsePrice(`${rawNumStr}${priceMatch[2] ?? ''}`);
+
+        if (price) {
+          notesMode = false;
+          benefitMode = false;
         let before = line.slice(0, priceMatch.index).replace(/\s+/g, ' ').trim();
-        // buang "Rp" dan sisa pemisah yang nyangkut di ujung (dari ": Rp6.000")
         before = before.replace(/\s*rp\.?\s*$/i, '').replace(/[:=\-\s]+$/, '').trim();
 
-        if (before.length < 2) {
-          // baris hanya berisi harga: varian untuk produk yang sedang berjalan
+        const isGenericVariant = /^(satuan|ecer|grosir|reseller|paket|harga|user|profile|privat|private|sharing)\b/i.test(before);
+
+        if (before.length < 2 || isGenericVariant) {
           if (!current) current = startProduct('Produk');
-          current.variants.push({ label: '1 Bulan', price });
+          let label = before.length >= 2 ? before : '1 Bulan';
+          if (mainSectionContext) {
+            label = `${mainSectionContext} ${label}`.trim();
+          }
+          current.variants.push({ label, price });
           continue;
         }
 
         const app = matchApp(before);
         if (app) {
-          // produk dikenal: sisa teks setelah nama aplikasi jadi label varian
-          // contoh: "Netflix 2 User 1 Hari" -> label "2 User 1 Hari"
           let label = before;
           for (const k of app.keys) {
             const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i');
@@ -471,14 +494,12 @@ export function parsePricelist(text: string): ParsedProduct[] {
             .replace(/[\s:=\-]+$/, '')
             .replace(/\s+/g, ' ')
             .trim();
-          // "Pro"/"Premium" di awal label redundan dengan nama produk
           label = label.replace(/^(pro|premium|vip|gold)\s+/i, '').trim();
           if (!label) {
             const d = before.match(DURATION_RE);
-            label = d ? normalizeDuration(d[1], d[2]) : '1 Bulan';
+            label = d ? normalizeDuration(d[1], d[2]) : (mainSectionContext || '1 Bulan');
           }
 
-          // Tentukan kategori/tier varian secara cerdas & bersih
           let tierPrefix = '';
           const subLower = (subSectionContext || '').toLowerCase();
           const mainLower = (mainSectionContext || '').toLowerCase();
@@ -497,25 +518,26 @@ export function parsePricelist(text: string): ParsedProduct[] {
             tierPrefix = '[Semiprivate]';
           } else if (mainLower.includes('private') || subLower.includes('private') || label.toLowerCase().includes('private')) {
             tierPrefix = '[Private]';
-          } else if (mainSectionContext) {
+          } else if (mainSectionContext && !label.toLowerCase().includes(mainLower)) {
             tierPrefix = `[${mainSectionContext}]`;
           }
 
           if (tierPrefix && !label.includes(tierPrefix)) {
-            // Bersihkan jika ada nama tier yang kembar di dalam label
             const cleanTierWord = tierPrefix.replace(/[\[\]]/g, '');
             const reDup = new RegExp(`^${cleanTierWord}\\s*-\\s*`, 'i');
             label = label.replace(reDup, '').trim();
             label = `${tierPrefix} ${label}`;
           }
 
-          pushCurrent();
-          current = startFromApp(app);
+          if (!current || normalizeKey(current.name) !== normalizeKey(app.name)) {
+            pushCurrent();
+            current = startFromApp(app);
+          }
           current.variants.push({ label, price });
           continue;
         }
 
-        // tidak dikenal: coba pisah nama vs durasi
+        // tidak dikenal tapi ada durasi
         const durMatch = before.match(DURATION_RE);
         if (durMatch && durMatch.index !== undefined) {
           const prefix = before
@@ -535,7 +557,14 @@ export function parsePricelist(text: string): ParsedProduct[] {
           continue;
         }
 
-        // tanpa durasi: seluruh teks jadi nama produk
+        // tanpa durasi: jika sudah ada produk berjalan, jadikan varian
+        if (current) {
+          let label = before;
+          if (mainSectionContext) label = `${mainSectionContext} - ${label}`;
+          current.variants.push({ label, price });
+          continue;
+        }
+
         let label = '1 Bulan';
         if (mainSectionContext) label = `${mainSectionContext} 1 Bulan`;
         pushCurrent();
@@ -544,40 +573,62 @@ export function parsePricelist(text: string): ParsedProduct[] {
         continue;
       }
     }
+  }
 
-    // tidak ada harga terbaca
+    // baris bullet tanpa harga
     if (/^\s*[•\-*·]/u.test(rawLine)) {
-      // baris bullet tanpa harga: catatan / SnK, kumpulkan untuk deskripsi
-      const noteText = cleanLine(rawLine).replace(/^[\s:]+/, '').trim();
+      const bulletText = cleanLine(rawLine).replace(/^[\s:]+/, '').trim();
+      if (benefitMode && current) {
+        if (!current.features.includes(bulletText)) {
+          current.features.push(bulletText);
+        }
+        continue;
+      }
+
       if (
-        notesMode &&
-        noteText.length >= 8 &&
-        noteText.length <= 300 &&
-        !/(admin|payment|bayar|chat\b|grup|group|transaksi|stok|order|snk)/i.test(noteText)
+        (notesMode || !current) &&
+        bulletText.length >= 8 &&
+        bulletText.length <= 300 &&
+        !/(admin|payment|bayar|chat\b|grup|group|transaksi|stok|order|snk)/i.test(bulletText)
       ) {
-        notesBuffer.push(noteText);
+        notesBuffer.push(bulletText);
       }
       continue;
     }
 
-    // Jika baris ini adalah sub-header durasi/kategori (misal: HARIAN, BULANAN, NO GARANSI, BERGARANSI)
-    // jangan anggap produk baru kalau sedang dalam konteks produk yang berjalan
+    // Jika dalam benefit/notes mode tapi bukan bullet, lewati
+    if (benefitMode || notesMode) continue;
+
+    // Baris sub-header
     const isSubHeader =
       /^(harian|bulanan|mingguan|tahunan|semi\s*private|semi\s*limit|anti\s*limit|no\s*garansi|nogar|bergaransi|garansi|crack|sharing|private|link|empass)\b/i.test(
         line
       );
 
     if (isSubHeader) {
-      // jadikan sebagai konteks sub-kategori
       subSectionContext = titleCase(line);
-      notesMode = false;
       continue;
     }
 
-    // sisanya: nama produk baru
-    notesMode = false;
-    mainSectionContext = null;
-    subSectionContext = null;
+    // Cek apakah baris teks biasa ini adalah nama aplikasi (misal: GEMINI AI PRO di header kotak)
+    const app = matchApp(line);
+    if (app) {
+      if (!current || normalizeKey(current.name) !== normalizeKey(app.name)) {
+        pushCurrent();
+        current = startFromApp(app);
+      }
+      continue;
+    }
+
+    // Jika sedang dalam produk yang berjalan dan baris ini tidak ada harga, anggap fitur/deskripsi bukan produk baru
+    if (current) {
+      if (line.length >= 3 && line.length <= 60 && !current.features.includes(line)) {
+        current.features.push(line);
+      }
+      continue;
+    }
+
+    // sisanya produk baru
     pushCurrent();
     current = startProduct(line);
   }
