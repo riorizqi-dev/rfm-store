@@ -12,6 +12,83 @@ type ProductSectionProps = {
   settings: Pick<Settings, 'waNumber' | 'waGroup'>;
 };
 
+function VariantSelector({
+  variants,
+  selectedIdx,
+  onSelect,
+}: {
+  variants: Product['variants'];
+  selectedIdx: number;
+  onSelect: (idx: number) => void;
+}) {
+  // Kelompokkan varian berdasarkan awalan kategori jika ada (misal Harian, Bulanan, No Garansi, Semiprivate)
+  const getCategory = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('no garansi') || l.includes('nogar')) return 'No Garansi';
+    if (l.includes('harian')) return 'Harian';
+    if (l.includes('bulanan')) return 'Bulanan';
+    if (l.includes('semiprivate') || l.includes('semi private')) return 'Semiprivate';
+    if (l.includes('anti limit')) return 'Anti Limit';
+    if (l.includes('private')) return 'Private';
+    if (l.includes('mixplan') || l.includes('premplan') || l.includes('crack')) return 'Crack/Plan';
+    return 'Semua';
+  };
+
+  // Kumpulkan list kategori unik
+  const categories = ['Semua', ...Array.from(new Set(variants.map((v) => getCategory(v.label))))].filter(
+    (c, i, arr) => arr.indexOf(c) === i
+  );
+
+  const [activeCategory, setActiveCategory] = useState('Semua');
+
+  const filtered = variants
+    .map((v, originalIdx) => ({ ...v, originalIdx }))
+    .filter((v) => activeCategory === 'Semua' || getCategory(v.label) === activeCategory);
+
+  return (
+    <div className="space-y-3">
+      {categories.length > 2 && (
+        <div className="flex flex-wrap gap-1.5 pb-1">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={`rounded-full px-3 py-1 font-mono text-[0.68rem] font-bold uppercase transition-all ${
+                activeCategory === cat
+                  ? 'bg-accent text-accent-ink shadow-sm'
+                  : 'bg-ink-border/40 text-muted hover:bg-ink-border hover:text-white'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grid max-h-56 gap-2 overflow-y-auto pr-1">
+        {filtered.map((variant) => (
+          <button
+            key={variant.originalIdx}
+            type="button"
+            onClick={() => onSelect(variant.originalIdx)}
+            className={`flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-left transition-all ${
+              selectedIdx === variant.originalIdx
+                ? 'border-accent bg-accent-dim ring-1 ring-accent'
+                : 'border-ink-border bg-ink hover:border-ink-strong'
+            }`}
+          >
+            <span className="text-sm font-medium text-white">{variant.label}</span>
+            <span className="font-mono text-sm font-bold text-accent">
+              {formatPrice(variant.price)}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProductCard({
   product,
   onDetail,
@@ -133,27 +210,20 @@ function ProductModal({
         </p>
 
         <div className="mt-5">
-          <h4 className="mb-2 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
-            Pilih Durasi
-          </h4>
-          <div className="grid gap-2">
-            {product.variants.map((variant, idx) => (
-              <button
-                key={variant.label}
-                onClick={() => setSelectedVariantIdx(idx)}
-                className={`flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-all ${
-                  selectedVariantIdx === idx
-                    ? 'border-accent bg-accent-dim'
-                    : 'border-ink-border hover:border-ink-strong'
-                }`}
-              >
-                <span className="text-sm font-medium">{variant.label}</span>
-                <span className="font-mono text-sm font-bold text-accent">
-                  {formatPrice(variant.price)}
-                </span>
-              </button>
-            ))}
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+              Pilihan Paket & Varian
+            </h4>
+            <span className="font-mono text-xs text-muted">
+              {product.variants.length} varian tersedia
+            </span>
           </div>
+
+          <VariantSelector
+            variants={product.variants}
+            selectedIdx={selectedVariantIdx}
+            onSelect={setSelectedVariantIdx}
+          />
         </div>
 
         {product.features.length > 0 && (
