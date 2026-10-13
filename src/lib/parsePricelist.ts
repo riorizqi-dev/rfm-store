@@ -33,7 +33,7 @@ type KnownApp = {
  */
 const KNOWN_APPS: KnownApp[] = [
   {
-    keys: ['netflix', 'nflix', 'nf'],
+    keys: ['netflix', 'nflix', 'nf', 'netcark', 'netcrack'],
     name: 'Netflix Premium',
     domain: 'netflix.com',
     category: 'Streaming',
@@ -516,8 +516,23 @@ export function parsePricelist(text: string): ParsedProduct[] {
       continue;
     }
 
+    // Jika baris ini adalah sub-header durasi/kategori (misal: HARIAN, BULANAN, NO GARANSI, BERGARANSI)
+    // jangan anggap produk baru kalau sedang dalam konteks produk yang berjalan
+    const isSubHeader =
+      /^(harian|bulanan|mingguan|tahunan|semi\s*private|semi\s*limit|anti\s*limit|no\s*garansi|nogar|bergaransi|garansi|crack|sharing|private|link|empass)\b/i.test(
+        line
+      );
+
+    if (isSubHeader) {
+      // jadikan sebagai konteks varian
+      sectionContext = titleCase(line);
+      notesMode = false;
+      continue;
+    }
+
     // sisanya: nama produk baru
     notesMode = false;
+    sectionContext = null;
     pushCurrent();
     current = startProduct(line);
   }
