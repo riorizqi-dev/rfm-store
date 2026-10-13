@@ -257,10 +257,12 @@ export async function bulkImportAction(formData: FormData) {
     for (const p of prepared) await addProduct(p);
 
     revalidatePath('/');
+    revalidatePath('/kelola-rfm');
     revalidatePath(`/${ADMIN_SECRET}/dashboard`);
     return { success: true, count: prepared.length };
-  } catch {
-    return { error: 'Gagal menyimpan produk hasil impor.' };
+  } catch (err: any) {
+    console.error('bulkImport error:', err);
+    return { error: `Gagal menyimpan: ${err?.message || 'Error database'}` };
   }
 }
 
