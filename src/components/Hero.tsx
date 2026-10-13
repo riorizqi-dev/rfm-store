@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import type { Settings } from '@/lib/products';
 import { waLink } from '@/lib/utils';
 
@@ -6,6 +9,14 @@ type HeroProps = {
 };
 
 export function Hero({ settings }: HeroProps) {
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCursorVisible((v) => !v);
+    }, 530);
+    return () => clearInterval(timer);
+  }, []);
   return (
     <section className="relative z-[1] overflow-hidden">
       {/* ambient glow: nempel ke tepi viewport biar kiri-kanan seimbang */}
@@ -113,8 +124,11 @@ export function Hero({ settings }: HeroProps) {
           <p className="mt-2 flex items-center gap-1.5">
             <span className="font-bold text-accent">$</span>{' '}
             <span
-              style={{ animation: 'hackerBlink 0.75s infinite' }}
-              className="terminal-cursor inline-block h-[1.1em] w-[9px] rounded-[1px] bg-accent shadow-[0_0_8px_rgba(201,241,88,0.8)] align-middle"
+              className={`inline-block h-[1.1em] w-[9px] rounded-[1px] bg-accent align-middle transition-opacity duration-75 ${
+                cursorVisible
+                  ? 'opacity-100 shadow-[0_0_8px_rgba(201,241,88,0.9)]'
+                  : 'opacity-0'
+              }`}
             />
           </p>
         </div>
