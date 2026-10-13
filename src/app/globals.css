@@ -156,40 +156,76 @@ body::before {
   }
 }
 
-/* ── hacker terminal & text glow animations ── */
-@keyframes terminalCursor {
+/* ── hacker terminal & text blinking animations ── */
+@keyframes hackerBlink {
   0%, 49% {
     opacity: 1;
-    filter: drop-shadow(0 0 6px #c9f158);
+    visibility: visible;
   }
   50%, 100% {
     opacity: 0;
-    filter: none;
+    visibility: hidden;
   }
 }
 
 .terminal-cursor {
   display: inline-block;
-  animation: terminalCursor 0.9s infinite;
+  animation: hackerBlink 0.8s steps(1, start) infinite !important;
 }
 
-@keyframes cyberGlow {
+/* Kedap-kedip hacker neon flicker untuk judul */
+@keyframes hackerNeonFlicker {
   0%, 100% {
-    text-shadow: 0 0 10px rgba(201, 241, 88, 0.4), 0 0 20px rgba(201, 241, 88, 0.2);
-    filter: drop-shadow(0 0 4px rgba(201, 241, 88, 0.3));
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9), 0 0 25px rgba(201, 241, 88, 0.5);
   }
-  50% {
-    text-shadow: 0 0 4px rgba(201, 241, 88, 0.2), 0 0 8px rgba(201, 241, 88, 0.1);
-    filter: drop-shadow(0 0 1px rgba(201, 241, 88, 0.1));
+  15% {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
+  }
+  16% {
+    opacity: 0.15;
+    text-shadow: none;
+  }
+  19% {
+    opacity: 0.9;
+    text-shadow: 0 0 8px rgba(201, 241, 88, 0.6);
+  }
+  22% {
+    opacity: 0.2;
+    text-shadow: none;
+  }
+  25% {
+    opacity: 1;
+    text-shadow: 0 0 15px rgba(201, 241, 88, 0.95);
+  }
+  55% {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
+  }
+  56% {
+    opacity: 0.3;
+    text-shadow: none;
+  }
+  58% {
+    opacity: 1;
+    text-shadow: 0 0 14px rgba(201, 241, 88, 0.9);
   }
   75% {
-    text-shadow: 0 0 16px rgba(201, 241, 88, 0.7), 0 0 30px rgba(201, 241, 88, 0.4);
-    filter: drop-shadow(0 0 8px rgba(201, 241, 88, 0.5));
+    opacity: 1;
+  }
+  76% {
+    opacity: 0.25;
+    text-shadow: none;
+  }
+  78% {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
   }
 }
 
 .animate-cyber-glow {
-  animation: cyberGlow 2.5s ease-in-out infinite;
+  animation: hackerNeonFlicker 2.8s infinite !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
