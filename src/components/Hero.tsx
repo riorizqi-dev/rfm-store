@@ -10,6 +10,7 @@ type HeroProps = {
 
 export function Hero({ settings }: HeroProps) {
   const [cursorVisible, setCursorVisible] = useState(true);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,7 +54,7 @@ export function Hero({ settings }: HeroProps) {
           tanpa perlu daftar akun di web ini.
         </p>
 
-        <div className="mb-11 flex flex-wrap gap-3">
+        <div className="mb-11 flex flex-wrap items-center gap-3">
           <a
             href={waLink(settings.waNumber, settings.waDefaultMessage)}
             target="_blank"
@@ -70,6 +71,14 @@ export function Hero({ settings }: HeroProps) {
           >
             Join Grup
           </a>
+          <button
+            type="button"
+            onClick={() => setShowVideoModal(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-accent/40 bg-accent-dim/60 px-5 py-3 font-mono text-sm font-bold text-accent shadow-[0_0_15px_rgba(201,241,88,0.1)] transition-all hover:border-accent hover:bg-accent hover:text-accent-ink"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/20 text-xs">▶</span>
+            Tonton Video Promo
+          </button>
         </div>
 
         {/* stats */}
@@ -133,6 +142,45 @@ export function Hero({ settings }: HeroProps) {
           </p>
         </div>
       </div>
+      {/* Modal Video Promo Commercial */}
+      {showVideoModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fade-in"
+          onClick={() => setShowVideoModal(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-ink-strong bg-ink-card shadow-[0_0_50px_rgba(201,241,88,0.2)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-ink-border bg-ink-surface px-5 py-3">
+              <div className="flex items-center gap-2 font-mono text-xs text-accent">
+                <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                <span>RFMSTORE // OFFICIAL PROMO VIDEO</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoModal(false)}
+                className="rounded-lg p-1.5 text-zinc-400 hover:bg-ink-border hover:text-white"
+                aria-label="Tutup Video"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="relative aspect-video w-full bg-black">
+              <video
+                src="/rfm_store_commercial.mp4"
+                controls
+                autoPlay
+                className="h-full w-full object-contain"
+              >
+                Browser Anda tidak mendukung tag video.
+              </video>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </section>
   );
