@@ -158,89 +158,53 @@ body::before {
 
 /* ── hacker terminal & text blinking animations ── */
 @keyframes hackerBlink {
-  0%, 49% {
-    opacity: 1;
-    visibility: visible;
+  0%, 49.9% {
+    opacity: 1 !important;
+    visibility: visible !important;
   }
   50%, 100% {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 }
 
 .terminal-cursor {
   display: inline-block;
-  animation: hackerBlink 0.8s steps(1, start) infinite !important;
+  animation: hackerBlink 0.75s infinite !important;
 }
 
 /* Kedap-kedip hacker neon flicker untuk judul */
 @keyframes hackerNeonFlicker {
   0%, 100% {
     opacity: 1;
-    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9), 0 0 25px rgba(201, 241, 88, 0.5);
+    filter: drop-shadow(0 0 10px rgba(201, 241, 88, 0.8));
   }
-  15% {
+  10%, 12% {
+    opacity: 0.1;
+    filter: none;
+  }
+  14% {
     opacity: 1;
-    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
+    filter: drop-shadow(0 0 14px rgba(201, 241, 88, 0.95));
   }
-  16% {
-    opacity: 0.15;
-    text-shadow: none;
-  }
-  19% {
-    opacity: 0.9;
-    text-shadow: 0 0 8px rgba(201, 241, 88, 0.6);
-  }
-  22% {
+  30%, 31% {
     opacity: 0.2;
-    text-shadow: none;
+    filter: none;
   }
-  25% {
+  32% {
     opacity: 1;
-    text-shadow: 0 0 15px rgba(201, 241, 88, 0.95);
+    filter: drop-shadow(0 0 10px rgba(201, 241, 88, 0.8));
   }
-  55% {
+  70%, 71% {
+    opacity: 0.15;
+    filter: none;
+  }
+  72% {
     opacity: 1;
-    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
-  }
-  56% {
-    opacity: 0.3;
-    text-shadow: none;
-  }
-  58% {
-    opacity: 1;
-    text-shadow: 0 0 14px rgba(201, 241, 88, 0.9);
-  }
-  75% {
-    opacity: 1;
-  }
-  76% {
-    opacity: 0.25;
-    text-shadow: none;
-  }
-  78% {
-    opacity: 1;
-    text-shadow: 0 0 12px rgba(201, 241, 88, 0.9);
+    filter: drop-shadow(0 0 12px rgba(201, 241, 88, 0.9));
   }
 }
 
 .animate-cyber-glow {
-  animation: hackerNeonFlicker 2.8s infinite !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .animate-drift,
-  .animate-drift-slow,
-  .terminal-cursor,
-  .animate-cyber-glow {
-    animation: none !important;
-  }
+  animation: hackerNeonFlicker 2s infinite !important;
 }

@@ -27,7 +27,10 @@ export function Hero({ settings }: HeroProps) {
 
         <h1 className="font-disp text-[clamp(2.3rem,5.2vw,3.7rem)] font-bold leading-[1.08] tracking-[-0.03em]">
           Semua aplikasi premium.{' '}
-          <span className="relative inline-block text-accent animate-cyber-glow">
+          <span
+            style={{ animation: 'hackerNeonFlicker 2s infinite' }}
+            className="relative inline-block text-accent animate-cyber-glow"
+          >
             Harga mulai Rp1rb.
             <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-accent via-accent-bright to-transparent opacity-80" />
           </span>
@@ -109,7 +112,10 @@ export function Hero({ settings }: HeroProps) {
           </p>
           <p className="mt-2 flex items-center gap-1.5">
             <span className="font-bold text-accent">$</span>{' '}
-            <span className="terminal-cursor inline-block h-[1.1em] w-[9px] rounded-[1px] bg-accent shadow-[0_0_8px_rgba(201,241,88,0.8)] align-middle" />
+            <span
+              style={{ animation: 'hackerBlink 0.75s infinite' }}
+              className="terminal-cursor inline-block h-[1.1em] w-[9px] rounded-[1px] bg-accent shadow-[0_0_8px_rgba(201,241,88,0.8)] align-middle"
+            />
           </p>
         </div>
       </div>
