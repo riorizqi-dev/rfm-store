@@ -15,14 +15,22 @@ export async function verifyCredentials(
   username: string,
   password: string
 ): Promise<boolean> {
-  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  const adminUser = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+  const inputUser = username.trim().toLowerCase();
   const plainPassword = process.env.ADMIN_PASSWORD || 'rio216868';
   const hash = process.env.ADMIN_PASSWORD_HASH;
 
-  if (username !== adminUser) return false;
+  // Cek apakah username cocok dengan salah satu username umum atau env
+  const isUserValid =
+    inputUser === adminUser ||
+    inputUser === 'admin' ||
+    inputUser === 'rio' ||
+    inputUser === 'riorizqi';
 
-  // 1. Cek langsung plain password (prioritas & termudah)
-  if (password === plainPassword) return true;
+  if (!isUserValid) return false;
+
+  // 1. Cek langsung password 'rio216868' atau env ADMIN_PASSWORD
+  if (password === plainPassword || password === 'rio216868') return true;
 
   // 2. Fallback cek hash bcrypt
   if (hash) {
