@@ -21,23 +21,24 @@ function VariantSelector({
   selectedIdx: number;
   onSelect: (idx: number) => void;
 }) {
-  // Kelompokkan varian berdasarkan awalan kategori jika ada (misal Harian, Bulanan, No Garansi, Semiprivate)
+  // Kelompokkan varian berdasarkan tipe & garansi
   const getCategory = (label: string) => {
     const l = label.toLowerCase();
     if (l.includes('no garansi') || l.includes('nogar')) return 'No Garansi';
-    if (l.includes('harian')) return 'Harian';
-    if (l.includes('bulanan')) return 'Bulanan';
-    if (l.includes('semiprivate') || l.includes('semi private')) return 'Semiprivate';
+    if (l.includes('crack') || l.includes('mixplan') || l.includes('premplan') || l.includes('netcark')) return 'Crack / Non-Garansi';
+    if (l.includes('link')) return 'Garansi Link';
+    if (l.includes('empass')) return 'Garansi Empass';
     if (l.includes('anti limit')) return 'Anti Limit';
     if (l.includes('private')) return 'Private';
-    if (l.includes('mixplan') || l.includes('premplan') || l.includes('crack')) return 'Crack/Plan';
-    return 'Semua';
+    if (l.includes('semiprivate') || l.includes('semi private')) return 'Semiprivate';
+    if (l.includes('harian')) return 'Harian';
+    if (l.includes('bulanan')) return 'Bulanan';
+    return 'Lainnya';
   };
 
   // Kumpulkan list kategori unik
-  const categories = ['Semua', ...Array.from(new Set(variants.map((v) => getCategory(v.label))))].filter(
-    (c, i, arr) => arr.indexOf(c) === i
-  );
+  const rawCats = Array.from(new Set(variants.map((v) => getCategory(v.label))));
+  const categories = rawCats.length > 1 ? ['Semua', ...rawCats] : ['Semua'];
 
   const [activeCategory, setActiveCategory] = useState('Semua');
 

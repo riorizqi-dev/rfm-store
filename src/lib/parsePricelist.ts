@@ -368,8 +368,10 @@ export function parsePricelist(text: string): ParsedProduct[] {
     current = null;
   };
 
-  // konteks section (✦ CAPCUT PRIVATE -> "Private") untuk label varian
-  let sectionContext: string | null = null;
+  // Konteks kategori tingkat utama (✦ NETFLIX LINK, ✦ NETFLIX EMPASS, ✦ NETCARK, dll)
+  let mainSectionContext: string | null = null;
+  // Konteks sub-kategori (HARIAN, BULANAN, NO GARANSI, SEMI PRIVATE, dll)
+  let subSectionContext: string | null = null;
   let notesMode = false;
   const notesBuffer: string[] = [];
 
@@ -384,7 +386,7 @@ export function parsePricelist(text: string): ParsedProduct[] {
     if (/^\s*[✦✧]/u.test(rawLine)) {
       const headerText = line.replace(/^[✦✧]\s*/u, '').trim();
       const lower = headerText.toLowerCase();
-      const NOTES_WORDS = ['note', 'kebijakan', 'snk', 'ketentuan', 'syarat', 'garansi'];
+      const NOTES_WORDS = ['note', 'kebijakan', 'snk', 'ketentuan', 'syarat'];
       const CONTEXT_REJECT = [
         'harga', 'price', 'ready', 'stok', 'order', 'info', 'promo', 'open',
         'list', 'admin', 'whatsapp', 'format', 'policy', 'baru',
@@ -392,7 +394,16 @@ export function parsePricelist(text: string): ParsedProduct[] {
 
       if (headerText.endsWith(':') || NOTES_WORDS.some((w) => lower.includes(w))) {
         if (NOTES_WORDS.some((w) => lower.includes(w))) notesMode = true;
-        sectionContext = null;
+        mainSectionContext = null;
+        subSectionContext = null;
+        continue;
+      }
+
+      // Identifikasi tipe khusus
+      if (lower.includes('netcark') || lower.includes('netcrack') || lower.includes('crack')) {
+        mainSectionContext = 'Crack';
+        subSectionContext = null;
+        notesMode = false;
         continue;
       }
 
@@ -400,21 +411,24 @@ export function parsePricelist(text: string): ParsedProduct[] {
       let rest = headerText;
       for (const app of KNOWN_APPS) {
         for (const k of app.keys) {
-          const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+          const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i');
           if (re.test(rest)) rest = rest.replace(re, ' ');
         }
       }
       rest = rest.replace(/\s+/g, ' ').replace(/^[\s\-/&]+|[\s\-/&]+$/g, '').trim();
       const lowerRest = rest.toLowerCase();
+
       if (
-        rest.length >= 3 &&
-        rest.length <= 18 &&
+        rest.length >= 2 &&
+        rest.length <= 25 &&
         !CONTEXT_REJECT.some((w) => lowerRest.includes(w))
       ) {
-        sectionContext = titleCase(rest);
+        mainSectionContext = titleCase(rest);
+        subSectionContext = null;
         notesMode = false;
       } else {
-        sectionContext = null;
+        mainSectionContext = null;
+        subSectionContext = null;
       }
       continue;
     }
@@ -446,7 +460,7 @@ export function parsePricelist(text: string): ParsedProduct[] {
           // contoh: "Netflix 2 User 1 Hari" -> label "2 User 1 Hari"
           let label = before;
           for (const k of app.keys) {
-            const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            const re = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i');
             if (re.test(label)) {
               label = label.replace(re, ' ');
               break;
@@ -463,13 +477,53 @@ export function parsePricelist(text: string): ParsedProduct[] {
             const d = before.match(DURATION_RE);
             label = d ? normalizeDuration(d[1], d[2]) : '1 Bulan';
           }
-          // konteks section: "✦ CAPCUT PRIVATE" -> "Private 7 Hari"
-          if (
-            sectionContext &&
-            !label.toLowerCase().includes(sectionContext.toLowerCase())
-          ) {
-            label = `${sectionContext} ${label}`;
+
+          // Gabungkan konteks kategori (Main section + Sub section)
+          // Contoh: main = "Link", sub = "No Garansi" -> label = "[No Garansi] Link 1P2U 1 Bulan"
+          // atau: main = "Empass", sub = "Bulanan" -> label = "[Empass] 1 User 1 Bulan"
+          // atau: main = "Crack" -> label = "[Crack] Mixplan"
+          const prefixParts: string[] = [];
+
+          if (subSectionContext) {
+            const subLower = subSectionContext.toLowerCase();
+            if (subLower.includes('no garansi') || subLower.includes('nogar')) {
+              prefixParts.push('No Garansi');
+            } else if (subLower.includes('crack')) {
+              prefixParts.push('Crack');
+            }
           }
+
+          if (mainSectionContext) {
+            const mainLower = mainSectionContext.toLowerCase();
+            if (mainLower.includes('crack')) {
+              if (!prefixParts.includes('Crack')) prefixParts.push('Crack');
+            } else if (!prefixParts.some((p) => p.toLowerCase().includes(mainLower))) {
+              prefixParts.push(mainSectionContext);
+            }
+          }
+
+          if (subSectionContext) {
+            const subLower = subSectionContext.toLowerCase();
+            if (
+              !subLower.includes('no garansi') &&
+              !subLower.includes('nogar') &&
+              !subLower.includes('crack') &&
+              !subLower.includes('bulanan') &&
+              !subLower.includes('harian')
+            ) {
+              if (!prefixParts.some((p) => p.toLowerCase().includes(subLower))) {
+                prefixParts.push(subSectionContext);
+              }
+            }
+          }
+
+          // Pasang prefix jika label belum memilikinya
+          for (const p of prefixParts.reverse()) {
+            if (!label.toLowerCase().includes(p.toLowerCase())) {
+              label = `${p} - ${label}`;
+            }
+          }
+
           pushCurrent();
           current = startFromApp(app);
           current.variants.push({ label, price });
@@ -483,7 +537,10 @@ export function parsePricelist(text: string): ParsedProduct[] {
             .slice(0, durMatch.index)
             .replace(/[\s:=\-]+$/, '')
             .trim();
-          const label = normalizeDuration(durMatch[1], durMatch[2]);
+          let label = normalizeDuration(durMatch[1], durMatch[2]);
+          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
+            label = `${mainSectionContext} ${label}`;
+          }
           if (prefix.length >= 2 && /[a-z]/i.test(prefix)) {
             pushCurrent();
             current = startProduct(prefix);
@@ -494,9 +551,11 @@ export function parsePricelist(text: string): ParsedProduct[] {
         }
 
         // tanpa durasi: seluruh teks jadi nama produk
+        let label = '1 Bulan';
+        if (mainSectionContext) label = `${mainSectionContext} 1 Bulan`;
         pushCurrent();
         current = startProduct(before);
-        current.variants.push({ label: '1 Bulan', price });
+        current.variants.push({ label, price });
         continue;
       }
     }
@@ -524,15 +583,16 @@ export function parsePricelist(text: string): ParsedProduct[] {
       );
 
     if (isSubHeader) {
-      // jadikan sebagai konteks varian
-      sectionContext = titleCase(line);
+      // jadikan sebagai konteks sub-kategori
+      subSectionContext = titleCase(line);
       notesMode = false;
       continue;
     }
 
     // sisanya: nama produk baru
     notesMode = false;
-    sectionContext = null;
+    mainSectionContext = null;
+    subSectionContext = null;
     pushCurrent();
     current = startProduct(line);
   }
