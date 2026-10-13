@@ -49,7 +49,12 @@ export async function loginAction(formData: FormData) {
 
   const valid = await verifyCredentials(username, password);
   if (!valid) {
-    return { error: 'Username atau password salah.' };
+    const adminUser = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+    const isUserValid = ['admin', 'rio', 'riorizqi', adminUser].includes(username.trim().toLowerCase());
+    if (!isUserValid) {
+      return { error: `Username "${username}" tidak dikenal. Gunakan: admin / rio` };
+    }
+    return { error: `Password salah untuk user "${username}".` };
   }
 
   await createSession(username);
