@@ -18,6 +18,11 @@ export default function ErrorPage({
             Database free tier tidur kalau lama nggak ada pengunjung. Biasanya
             sekali coba lagi udah normal.
           </p>
+          {error?.message && (
+            <pre className="mt-4 max-h-40 overflow-auto rounded bg-red-950/40 p-3 text-left font-mono text-xs text-red-300 border border-red-500/20">
+              {error.message}
+            </pre>
+          )}
           <button onClick={reset} className="btn-primary mt-6">
             Coba Lagi
           </button>
