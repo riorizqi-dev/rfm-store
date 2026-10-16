@@ -301,10 +301,13 @@ function normalizeDuration(count: string, unit: string): string {
 }
 
 function cleanLine(line: string): string {
-  return line
-    // buang bullet, emoji, dan simbol hias di awal baris
-    .replace(/^[\s\-*=>•·▪◆★☆✅✔️🔥💥📌👉→]+/u, '')
-    .replace(/[\s\-*=:•·]+$/u, '')
+  let s = line.trim();
+  // Strip outer formatting wrappers like _text_, *text*, ~text~
+  s = s.replace(/^([_*~]+)(.*?)\1$/u, '$2').trim();
+  return s
+    // buang bullet, emoji, quote guillemets, dan simbol hias di awal baris
+    .replace(/^[\s\-*=>•·▪◆★☆✅✔️🔥💥📌👉→»›«‹_~]+/u, '')
+    .replace(/[\s\-*=:•·_~]+$/u, '')
     .trim();
 }
 
@@ -363,6 +366,10 @@ export function parsePricelist(text: string): ParsedProduct[] {
 
   // Konteks kategori tingkat utama (✦ NETFLIX LINK, ✦ NETFLIX EMPASS, ✦ NETCARK, dll)
   let mainSectionContext: string | null = null;
+  // Konteks garansi ([Full Garansi], [No Garansi])
+  let tierContext: string | null = null;
+  // Konteks profil / tipe paket (1P2U, 1P1U, Semi Private, dll)
+  let profileContext: string | null = null;
   // Konteks sub-kategori (HARIAN, BULANAN, NO GARANSI, SEMI PRIVATE, dll)
   let subSectionContext: string | null = null;
   let notesMode = false;
@@ -404,6 +411,9 @@ export function parsePricelist(text: string): ParsedProduct[] {
         if (!current || normalizeKey(current.name) !== normalizeKey(appInHeader.name)) {
           pushCurrent();
           current = startFromApp(appInHeader);
+          if (lower.includes('reseller')) {
+            current.name = titleCase(headerText);
+          }
         }
       }
 
@@ -457,8 +467,10 @@ export function parsePricelist(text: string): ParsedProduct[] {
 
       // Jika nomor bertitik satu digit (seperti "3.1" atau "2.0") tanpa "Rp" atau "k", ini nomor versi bukan harga
       const isVersionNumber = /^\d+\.\d{1,2}$/.test(rawNumStr) && !hasUnit && !/rp/i.test(matchedSeparatorAndPrice);
+      // Resolusi video seperti "4K" atau "8K" tanpa colon/equals/rp bukan harga
+      const isResolution = !/[:=]|rp/i.test(matchedSeparatorAndPrice) && (rawNumStr === '4' || rawNumStr === '8') && /^k$/i.test(priceMatch[2] ?? '');
 
-      if (hasCurrencyOrColon && !isVersionNumber) {
+      if (hasCurrencyOrColon && !isVersionNumber && !isResolution) {
         const price = parsePrice(`${rawNumStr}${priceMatch[2] ?? ''}`);
 
         if (price) {
@@ -467,13 +479,27 @@ export function parsePricelist(text: string): ParsedProduct[] {
         let before = line.slice(0, priceMatch.index).replace(/\s+/g, ' ').trim();
         before = before.replace(/\s*rp\.?\s*$/i, '').replace(/[:=\-\s]+$/, '').trim();
 
-        const isGenericVariant = /^(satuan|ecer|grosir|reseller|paket|harga|user|profile|privat|private|sharing)\b/i.test(before);
+        const isGenericVariant = /^(satuan|ecer|grosir|reseller|paket|harga|user|profile|privat|private|sharing|\d+p\d+u|semi)\b/i.test(before);
 
         if (before.length < 2 || isGenericVariant) {
           if (!current) current = startProduct('Produk');
+          const durMatchInBefore = before.match(DURATION_RE);
           let label = before.length >= 2 ? before : '1 Bulan';
-          if (mainSectionContext) {
-            label = `${mainSectionContext} ${label}`.trim();
+          if (durMatchInBefore && durMatchInBefore.index !== undefined) {
+            const pref = before.slice(0, durMatchInBefore.index).trim();
+            const normDur = normalizeDuration(durMatchInBefore[1], durMatchInBefore[2]);
+            label = pref ? `${pref} ${normDur}` : normDur;
+          }
+          if (profileContext && !label.toUpperCase().includes(profileContext.toUpperCase())) {
+            label = `${profileContext} ${label}`.trim();
+          }
+          if (tierContext && !label.toUpperCase().includes(tierContext.toUpperCase())) {
+            label = `${tierContext} ${label}`.trim();
+          } else if (subSectionContext && !label.toLowerCase().includes(subSectionContext.toLowerCase())) {
+            label = `${subSectionContext} ${label}`.trim();
+          }
+          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
+            label = `[${mainSectionContext}] ${label}`.trim();
           }
           current.variants.push({ label, price });
           continue;
@@ -545,14 +571,43 @@ export function parsePricelist(text: string): ParsedProduct[] {
             .replace(/[\s:=\-]+$/, '')
             .trim();
           let label = normalizeDuration(durMatch[1], durMatch[2]);
-          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
-            label = `${mainSectionContext} ${label}`;
-          }
-          if (prefix.length >= 2 && /[a-z]/i.test(prefix)) {
+
+          const otherApp = prefix ? matchApp(prefix) : null;
+          const isVariantAttribute =
+            /^(\d+p\d+u|semi|private|sharing|profile|user|screen|garansi|nogar|full|anti\s*limit|crack|empass|link)\b/i.test(
+              prefix
+            ) ||
+            prefix.startsWith('[') ||
+            prefix.startsWith('(');
+
+          if (otherApp && normalizeKey(otherApp.name) !== normalizeKey(current?.name || '')) {
+            pushCurrent();
+            current = startFromApp(otherApp);
+          } else if (!current && !isVariantAttribute && prefix.length >= 2 && /[a-z]/i.test(prefix)) {
             pushCurrent();
             current = startProduct(prefix);
+          } else if (!current) {
+            current = startProduct(before);
           }
-          if (!current) current = startProduct(before);
+
+          if (prefix.length >= 2 && isVariantAttribute && !label.toLowerCase().includes(prefix.toLowerCase())) {
+            label = `${prefix} ${label}`.trim();
+          }
+
+          if (profileContext && !label.toUpperCase().includes(profileContext.toUpperCase())) {
+            label = `${profileContext} ${label}`.trim();
+          }
+
+          if (tierContext && !label.toUpperCase().includes(tierContext.toUpperCase())) {
+            label = `${tierContext} ${label}`.trim();
+          } else if (subSectionContext && !label.toLowerCase().includes(subSectionContext.toLowerCase())) {
+            label = `${subSectionContext} ${label}`.trim();
+          }
+
+          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
+            label = `[${mainSectionContext}] ${label}`.trim();
+          }
+
           current.variants.push({ label, price });
           continue;
         }
@@ -560,13 +615,21 @@ export function parsePricelist(text: string): ParsedProduct[] {
         // tanpa durasi: jika sudah ada produk berjalan, jadikan varian
         if (current) {
           let label = before;
+          if (profileContext && !label.toUpperCase().includes(profileContext.toUpperCase())) {
+            label = `${profileContext} ${label}`.trim();
+          }
+          if (tierContext && !label.toUpperCase().includes(tierContext.toUpperCase())) {
+            label = `${tierContext} ${label}`.trim();
+          }
           if (mainSectionContext) label = `${mainSectionContext} - ${label}`;
           current.variants.push({ label, price });
           continue;
         }
 
         let label = '1 Bulan';
-        if (mainSectionContext) label = `${mainSectionContext} 1 Bulan`;
+        if (profileContext) label = `${profileContext} ${label}`;
+        if (tierContext) label = `${tierContext} ${label}`;
+        if (mainSectionContext) label = `${mainSectionContext} ${label}`;
         pushCurrent();
         current = startProduct(before);
         current.variants.push({ label, price });
@@ -576,7 +639,9 @@ export function parsePricelist(text: string): ParsedProduct[] {
   }
 
     // baris bullet tanpa harga
-    if (/^\s*[•\-*·]/u.test(rawLine)) {
+    const isBulletLine =
+      /^\s*([•·▪◆★☆]|[\-*]\s)/u.test(rawLine) && !/^\s*\*[^*]+\*\s*$/.test(rawLine);
+    if (isBulletLine) {
       const bulletText = cleanLine(rawLine).replace(/^[\s:]+/, '').trim();
       if (benefitMode && current) {
         if (!current.features.includes(bulletText)) {
@@ -596,12 +661,51 @@ export function parsePricelist(text: string): ParsedProduct[] {
       continue;
     }
 
-    // Jika dalam benefit/notes mode tapi bukan bullet, lewati
-    if (benefitMode || notesMode) continue;
+    // Jika dalam benefit/notes mode tapi bukan bullet, cek apakah berpindah section
+    const isNotesHeader =
+      /^(s&k|snk|syarat|ketentuan|kebijakan|notes?|catatan)\b/i.test(line);
+    if (isNotesHeader) {
+      notesMode = true;
+      benefitMode = false;
+      continue;
+    }
 
-    // Baris sub-header
+    if (benefitMode || notesMode) {
+      // jika ada subheader baru atau aplikasi baru, keluar dari notes/benefit mode
+      const isHeaderTransition =
+        /^(harian|bulanan|semi|no\s*garansi|full\s*garansi|garansi|\d+p\d+u)/i.test(line) ||
+        Boolean(matchApp(line));
+      if (!isHeaderTransition) continue;
+      notesMode = false;
+      benefitMode = false;
+    }
+
+    // Baris sub-header atau garansi / profil
+    if (/^(full\s*garansi|garansi\s*penuh|bergaransi|garansi)/i.test(line)) {
+      tierContext = '[Full Garansi]';
+      profileContext = null;
+      subSectionContext = '[Full Garansi]';
+      continue;
+    }
+    if (/^(no\s*garansi|nogar|tanpa\s*garansi)/i.test(line)) {
+      tierContext = '[No Garansi]';
+      profileContext = null;
+      subSectionContext = '[No Garansi]';
+      continue;
+    }
+
+    if (/^(\d+p\d+u|semi\s*private|semi\s*limit|semi|private|anti\s*limit)$/i.test(line)) {
+      if (/(\d+p\d+u)/i.test(line)) {
+        profileContext = line.toUpperCase().replace(/(\d+)P(\d+)U/i, '$1P$2U');
+      } else {
+        profileContext = titleCase(line);
+      }
+      subSectionContext = profileContext;
+      continue;
+    }
+
     const isSubHeader =
-      /^(harian|bulanan|mingguan|tahunan|semi\s*private|semi\s*limit|anti\s*limit|no\s*garansi|nogar|bergaransi|garansi|crack|sharing|private|link|empass)\b/i.test(
+      /^(harian|bulanan|mingguan|tahunan|crack|sharing|link|empass)\b/i.test(
         line
       );
 
