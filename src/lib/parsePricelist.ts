@@ -487,8 +487,9 @@ export function parsePricelist(text: string): ParsedProduct[] {
           let label = before.length >= 2 ? before : '1 Bulan';
           if (durMatchInBefore && durMatchInBefore.index !== undefined) {
             const pref = before.slice(0, durMatchInBefore.index).trim();
+            const suff = before.slice(durMatchInBefore.index + durMatchInBefore[0].length).trim();
             const normDur = normalizeDuration(durMatchInBefore[1], durMatchInBefore[2]);
-            label = pref ? `${pref} ${normDur}` : normDur;
+            label = [pref, normDur, suff].filter(Boolean).join(' ');
           }
           if (profileContext && !label.toUpperCase().includes(profileContext.toUpperCase())) {
             label = `${profileContext} ${label}`.trim();
@@ -498,7 +499,11 @@ export function parsePricelist(text: string): ParsedProduct[] {
           } else if (subSectionContext && !label.toLowerCase().includes(subSectionContext.toLowerCase())) {
             label = `${subSectionContext} ${label}`.trim();
           }
-          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
+          if (
+            mainSectionContext &&
+            !label.toLowerCase().includes(mainSectionContext.toLowerCase()) &&
+            !current?.name.toLowerCase().includes(mainSectionContext.toLowerCase())
+          ) {
             label = `[${mainSectionContext}] ${label}`.trim();
           }
           current.variants.push({ label, price });
@@ -570,7 +575,14 @@ export function parsePricelist(text: string): ParsedProduct[] {
             .slice(0, durMatch.index)
             .replace(/[\s:=\-]+$/, '')
             .trim();
+          const suffix = before
+            .slice(durMatch.index + durMatch[0].length)
+            .replace(/^[\s:=\-]+/, '')
+            .trim();
           let label = normalizeDuration(durMatch[1], durMatch[2]);
+          if (suffix.length >= 2) {
+            label = `${label} ${suffix}`;
+          }
 
           const otherApp = prefix ? matchApp(prefix) : null;
           const isVariantAttribute =
@@ -604,7 +616,11 @@ export function parsePricelist(text: string): ParsedProduct[] {
             label = `${subSectionContext} ${label}`.trim();
           }
 
-          if (mainSectionContext && !label.toLowerCase().includes(mainSectionContext.toLowerCase())) {
+          if (
+            mainSectionContext &&
+            !label.toLowerCase().includes(mainSectionContext.toLowerCase()) &&
+            !current?.name.toLowerCase().includes(mainSectionContext.toLowerCase())
+          ) {
             label = `[${mainSectionContext}] ${label}`.trim();
           }
 
@@ -640,7 +656,7 @@ export function parsePricelist(text: string): ParsedProduct[] {
 
     // baris bullet tanpa harga
     const isBulletLine =
-      /^\s*([•·▪◆★☆]|[\-*]\s)/u.test(rawLine) && !/^\s*\*[^*]+\*\s*$/.test(rawLine);
+      /^\s*([•·▪]|[\-*]\s)/u.test(rawLine) && !/^\s*\*[^*]+\*\s*$/.test(rawLine);
     if (isBulletLine) {
       const bulletText = cleanLine(rawLine).replace(/^[\s:]+/, '').trim();
       if (benefitMode && current) {
