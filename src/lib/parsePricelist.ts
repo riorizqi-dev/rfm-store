@@ -150,6 +150,15 @@ const KNOWN_APPS: KnownApp[] = [
     features: ['Semua aplikasi Adobe', 'Cloud storage', 'Adobe Fonts', 'Update versi terbaru'],
   },
   {
+    keys: ['lightroom', 'lr', 'adobelightroom'],
+    name: 'Adobe Lightroom',
+    domain: 'adobe.com',
+    category: 'Design',
+    short: 'Adobe Lightroom: preset premium, cloud storage, edit RAW.',
+    long: 'Akun Adobe Lightroom Premium dengan akses semua preset, masking cerdas, healing brush, dan edit foto RAW.',
+    features: ['Preset premium', 'Edit RAW & masking cerdas', 'Healing brush', 'Multi perangkat'],
+  },
+  {
     keys: ['chatgpt', 'gpt', 'openai'],
     name: 'ChatGPT Plus',
     domain: 'chatgpt.com',
@@ -295,7 +304,7 @@ function normalizeDuration(count: string, unit: string): string {
     return n === 12 ? '12 Bulan' : `${n} Bulan`;
   }
   if (['hari', 'hr', 'day', 'days'].includes(u)) return `${n} Hari`;
-  if (['tahun', 'thn', 'year', 'yr'].includes(u)) return `${n * 12} Bulan`;
+  if (['tahun', 'thn', 'year', 'yr'].includes(u)) return `${n} Tahun`;
   if (['minggu', 'mgg', 'week', 'wk'].includes(u)) return `${n} Minggu`;
   return `${n} Bulan`;
 }
