@@ -68,6 +68,8 @@ export function ProductLogo({ domain, name, size = 48, className }: LogoProps) {
     apple: '/logos/apple.svg',
     applemusic: '/logos/apple.svg',
     appletv: '/logos/apple.svg',
+    lightroom: '/logos/lightroom.svg',
+    adobelightroom: '/logos/lightroom.svg',
   };
 
   const localSvg = localLogoMap[cleanName];
