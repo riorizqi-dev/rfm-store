@@ -68,11 +68,24 @@ export function ProductLogo({ domain, name, size = 48, className }: LogoProps) {
     apple: '/logos/apple.svg',
     applemusic: '/logos/apple.svg',
     appletv: '/logos/apple.svg',
+    adobe: '/logos/adobe.svg',
+    adobecreativecloud: '/logos/adobe.svg',
+    creativecloud: '/logos/adobe.svg',
+    photoshop: '/logos/adobe.svg',
     lightroom: '/logos/lightroom.svg',
     adobelightroom: '/logos/lightroom.svg',
   };
 
-  const localSvg = localLogoMap[cleanName];
+  const cleanDomain = (domain || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  let localSvg = localLogoMap[cleanName];
+  if (!localSvg) {
+    if (cleanName.includes('lightroom')) {
+      localSvg = '/logos/lightroom.svg';
+    } else if (cleanName.includes('adobe') || cleanDomain.includes('adobe') || cleanDomain.includes('photoshop')) {
+      localSvg = '/logos/adobe.svg';
+    }
+  }
 
   if (localSvg && !useFallback) {
     return (

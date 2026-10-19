@@ -141,9 +141,9 @@ const KNOWN_APPS: KnownApp[] = [
     features: ['Export tanpa watermark', 'Efek dan filter premium', 'Auto caption AI', 'Kualitas sampai 4K'],
   },
   {
-    keys: ['adobe', 'photoshop', 'ps', 'creativecloud'],
+    keys: ['creativecloud', 'adobecc', 'photoshop', 'ps'],
     name: 'Adobe Creative Cloud',
-    domain: 'photoshop.com',
+    domain: 'adobe.com',
     category: 'Design',
     short: 'Adobe CC: Photoshop, Illustrator, Premiere Pro.',
     long: 'Akun Adobe Creative Cloud dengan akses aplikasi Adobe: Photoshop, Illustrator, Premiere Pro, After Effects, Lightroom, dan lainnya. Termasuk cloud storage dan Adobe Fonts.',
